@@ -297,7 +297,8 @@ function runRender(component) {
     if (!component.node) return;
     
     if (component instanceof ComponentNode) {
-        component.anchor = findAnchor(component.parent.children, Number(component.parent.children.indexOf(component)));
+        const index = Number(component.parent.children.indexOf(component));
+        component.anchor = index !== -1 ? findAnchor(component.parent.children, index) : null;
     }
 
     // clean up old effects that for some reason arent here this time
