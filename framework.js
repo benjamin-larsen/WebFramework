@@ -205,7 +205,9 @@ function findAnchor(oldRender, index) {
     console.log("Find Anchor", oldRender, index)
     for (const oldIndex in oldRender) {
         if (Number(oldIndex) <= index) continue;
+
         const item = oldRender[oldIndex]
+        if (!item) continue;
 
         if (item instanceof ComponentNode) {
             const anchor = findAnchor(item.children, -1);
@@ -285,8 +287,6 @@ function patch(component, oldRender, newRender) {
         } else if (oldItem) {
             oldItem.unmount()
         }
-
-        component.children.push(item)
     }
 
     // add functionality to remove unused old items, without confusing keyed
@@ -310,9 +310,9 @@ function runRender(component) {
     })
 
     const oldChildren = component.children;
-    component.children = [];
 
     const rendered = component.renderFn(component.properties)
+    component.children = rendered;
 
     patch(component, oldChildren, rendered);
 
