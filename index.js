@@ -11,7 +11,7 @@ const someBool = reactive({ value: false })
 const someBool2 = reactive({ value: false })
 
 function exampleComponent(props) {
-    return [e("div", {}, t(props.test)), someBool2.value ? e("div", {}, t("Conditional from Component")) : null, e("div", {}, t("Hey div from Component"))]
+    return [e("div", {}, t(props.test)), someBool2.value ? e("div", {}, t("Conditional from Component")) : null]
 }
 
 window.someValue = someValue;
@@ -25,7 +25,8 @@ const app = new App(
     body(() => [
         e("div", {}, t("Hi")),
         someBool.value ? e("div", {}, t("Conditional Content")) : null,
-        c(exampleComponent, { test: someValue.value })
+        c(exampleComponent, { test: someValue.value }),
+        e("div", {}, t("content after component"))
     ])
 )
 

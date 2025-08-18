@@ -171,6 +171,7 @@ class ComponentNode {
         this.renderFn = renderFn;
         this.properties = properties;
         this.children = [];
+        this.parent = null;
 
         this.anchor = null;
         this.node = null;
@@ -263,6 +264,7 @@ function patchComponent(component, item, oldItem, oldRender, index) {
             item.children = oldItem.children;
         }
 
+        item.parent = component;
         item.anchor = findAnchor(oldRender, Number(index))
         item.node = component.node;
         runRender(item)
@@ -293,6 +295,10 @@ function patch(component, oldRender, newRender) {
 function runRender(component) {
     console.log("render", component)
     if (!component.node) return;
+    
+    if (component instanceof ComponentNode) {
+        component.anchor = findAnchor(component.parent.children, Number(component.parent.children.indexOf(component)));
+    }
 
     // clean up old effects that for some reason arent here this time
     effectStack.push((type, info) => {
