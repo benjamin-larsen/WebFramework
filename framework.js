@@ -47,6 +47,16 @@ class DependencyManager {
             this.subscriptions.delete(target)
         }
     }
+
+    trigger(target) {
+        const subscribers = this.subscriptions.get(target)
+        if (!subscribers) return;
+
+        for (const sub of subscribers) {
+            // make this batched with requsetAnimationFrame
+            runRender(sub)
+        }
+    }
 }
 
 const effectStack = new EffectStack()
@@ -71,6 +81,9 @@ export function reactive(target) {
             }
 
             target[prop] = value;
+
+            depManager.trigger(target)
+
             return true;
         }
     });
@@ -81,7 +94,6 @@ class HeadContainer {
         this.renderFn = renderFn;
         this.children = [];
 
-        this.parent = null;
         this.node = document.head;
 
         this.effects = new Set();
@@ -97,7 +109,6 @@ class BodyContainer {
         this.renderFn = renderFn;
         this.children = [];
 
-        this.parent = null;
         this.node = document.body;
 
         this.effects = new Set();
@@ -114,7 +125,18 @@ class ElementNode {
         this.attributes = attributes;
         this.children = children;
 
-        this.parent = null;
+        this.node = null;
+    }
+
+    unmount() {
+        if (!this.node) return;
+
+        for (const child of this.children) {
+            child.unmount()
+        }
+
+        this.node.remove();
+
         this.node = null;
     }
 }
@@ -128,7 +150,13 @@ class TextNode {
     constructor(text) {
         this.text = text;
 
-        this.parent = null;
+        this.node = null;
+    }
+
+    unmount() {
+        if (!this.node) return;
+        this.node.remove();
+
         this.node = null;
     }
 }
@@ -142,11 +170,28 @@ class ComponentNode {
     constructor(renderFn, properties) {
         this.renderFn = renderFn;
         this.properties = properties;
+        this.children = [];
 
-        this.parent = null;
+        this.anchor = null;
         this.node = null;
 
         this.effects = new Set();
+    }
+
+    removeEffects() {
+        for (const effect of this.effects) {
+            depManager.unsub(effect, this);
+        }
+
+        this.effects.clear()
+    }
+
+    unmount() {
+        this.removeEffects()
+
+        for (const child of this.children) {
+            child.unmount()
+        }
     }
 }
 
@@ -155,38 +200,72 @@ export function c(component, properties) {
     return new ComponentNode(component, properties)
 }
 
-function patchElement(component, item, oldItem) {
-    if (oldItem instanceof ElementNode && oldItem.node && oldItem.tag === item.tag) {
+function findAnchor(oldRender, index) {
+    console.log("Find Anchor", oldRender, index)
+    for (const oldIndex in oldRender) {
+        if (Number(oldIndex) <= index) continue;
+        const item = oldRender[oldIndex]
 
+        if (item instanceof ComponentNode) {
+            const anchor = findAnchor(item.children, -1);
+            if (anchor) return anchor
+        } else {
+            return item.node
+        }
+    }
+
+    return null;
+}
+
+function patchElement(component, item, oldItem, oldRender, index) {
+    if (oldItem instanceof ElementNode && oldItem.node && oldItem.tag === item.tag) {
+        item.node = oldItem.node;
+        patch(item, oldItem.children, item.children)
     } else {
+        if (oldItem) {
+            oldItem.unmount()
+        }
+
         const el = document.createElement(item.tag);
         item.node = el;
 
         patch(item, oldItem ? oldItem.children : [], item.children)
 
-        component.node.insertBefore(el, null);
+        component.node.insertBefore(el, findAnchor(oldRender, Number(index)) || component.anchor);
     }
 }
 
-function patchText(component, item, oldItem) {
-    if (oldItem instanceof ElementNode && oldItem.node && oldItem.tag === item.tag) {
+function patchText(component, item, oldItem, oldRender, index) {
+    if (oldItem instanceof TextNode && oldItem.node) {
+        item.node = oldItem.node;
 
+        if (oldItem.text !== item.text) {
+            item.node.nodeValue = item.text
+        }
     } else {
+        if (oldItem) {
+            oldItem.unmount()
+        }
+
         const el = document.createTextNode(item.text);
         item.node = el;
 
-        component.node.insertBefore(el, null);
+        component.node.insertBefore(el, findAnchor(oldRender, Number(index)) || component.anchor);
     }
 }
 
-function patchComponent(component, item, oldItem) {
-    if (oldItem.renderFn === item.renderFn && oldItem.node && oldItem.tag === item.tag) {
-
+function patchComponent(component, item, oldItem, oldRender, index) {
+    if (false && oldItem instanceof ComponentNode && oldItem.renderFn === item.renderFn && oldItem.node) {
+        item.node = oldItem.node;
     } else {
-        const el = document.createElement(item.tag);
-        item.node = el;
+        if (oldItem) {
+            oldItem.removeEffects()
+            item.children = oldItem.children;
+        }
 
-        component.node.insertBefore(el, null);
+        item.anchor = findAnchor(oldRender, Number(index))
+        item.node = component.node;
+        runRender(item)
     }
 }
 
@@ -196,21 +275,26 @@ function patch(component, oldRender, newRender) {
         const oldItem = oldRender[index]
         
         if (item instanceof ElementNode) {
-            patchElement(component, item, oldItem)
+            patchElement(component, item, oldItem, oldRender, index)
         } else if (item instanceof TextNode) {
-            patchText(component, item, oldItem)
+            patchText(component, item, oldItem, oldRender, index)
         } else if (item instanceof ComponentNode) {
-
+            patchComponent(component, item, oldItem, oldRender, index)
+        } else if (oldItem) {
+            oldItem.unmount()
         }
 
         component.children.push(item)
-        console.log(index, item)
     }
+
+    // add functionality to remove unused old items, without confusing keyed
 }
 
 function runRender(component) {
+    console.log("render", component)
     if (!component.node) return;
 
+    // clean up old effects that for some reason arent here this time
     effectStack.push((type, info) => {
         if (type !== "get") return;
 
@@ -221,7 +305,7 @@ function runRender(component) {
     const oldChildren = component.children;
     component.children = [];
 
-    const rendered = component.renderFn()
+    const rendered = component.renderFn(component.properties)
 
     patch(component, oldChildren, rendered);
 
