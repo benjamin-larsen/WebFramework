@@ -1,6 +1,5 @@
 import {
     App,
-    html,
     head,
     body,
     reactive,
@@ -15,16 +14,14 @@ const someValue = reactive({ value: "hi" })
 const someBool = reactive({ value: false })
 
 const app = new App(
-    html(
-        () => head({},
-            e("title", {}, t("Web Framework test"))
-        ),
-        () => body({},
-            e("div", {}, t("Hi")),
-            c(exampleComponent, { test: someValue.value }),
-            someBool.value ? e("div", {}, t("Conditional Content")) : null
-        )
-    )
+    head(() => [
+        e("title", {}, t("Web Framework test"))
+    ]),
+    body(() => [
+        e("div", {}, t("Hi")),
+        c(exampleComponent, { test: someValue.value }),
+        someBool.value ? e("div", {}, t("Conditional Content")) : null
+    ])
 )
 
 app.render()
