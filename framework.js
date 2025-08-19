@@ -53,7 +53,7 @@ class DependencyManager {
         if (!subscribers) return;
 
         for (const sub of subscribers) {
-            renderQueue.queue(sub)
+            renderQueue.queue(sub.vnode)
         }
     }
 }
@@ -113,6 +113,27 @@ export function reactive(target) {
     });
 }
 
+class ComponentInstance {
+    constructor(vnode) {
+        this.vnode = vnode;
+
+        this.effects = new Set();
+    }
+
+    cleanEffects() {
+        for (const effect of this.effects) {
+            depManager.unsub(effect, this);
+        }
+
+        this.effects.clear()
+    }
+
+    destroy() {
+        this.cleanEffects()
+        this.vnode = null;
+    }
+}
+
 class HeadContainer {
     constructor(renderFn) {
         this.renderFn = renderFn;
@@ -120,7 +141,7 @@ class HeadContainer {
 
         this.node = document.head;
 
-        this.effects = new Set();
+        this.instance = new ComponentInstance(this);
     }
 }
 
@@ -135,7 +156,7 @@ class BodyContainer {
 
         this.node = document.body;
 
-        this.effects = new Set();
+        this.instance = new ComponentInstance(this);
     }
 }
 
@@ -158,6 +179,9 @@ class ElementNode {
         for (const child of this.children) {
             child.unmount()
         }
+
+        this.node.remove();
+        this.node = null;
     }
 }
 
@@ -175,8 +199,8 @@ class TextNode {
 
     unmount() {
         if (!this.node) return;
-        this.node.remove();
 
+        this.node.remove();
         this.node = null;
     }
 }
@@ -196,20 +220,13 @@ class ComponentNode {
         this.index = null;
         this.anchor = null;
         this.node = null;
+        this.instance = null;
 
         this.effects = new Set();
     }
 
-    removeEffects() {
-        for (const effect of this.effects) {
-            depManager.unsub(effect, this);
-        }
-
-        this.effects.clear()
-    }
-
     unmount() {
-        this.removeEffects()
+        this.instance.destroy()
         this.anchor = null
 
         for (const child of this.children) {
@@ -289,14 +306,24 @@ function patchText(component, item, oldItem, oldRender, index) {
 }
 
 function patchComponent(component, item, oldItem, oldRender, index) {
-    if (oldItem instanceof ComponentNode && oldItem.renderFn === item.renderFn && oldItem.node) {
+    const isSameComponent = oldItem instanceof ComponentNode && oldItem.renderFn === item.renderFn;
+
+    if (isSameComponent && oldItem.instance) {
+        item.instance = oldItem.instance
+        item.instance.vnode = item
+    } else {
+        item.instance = new ComponentInstance(item)
+    }
+
+    if (isSameComponent && oldItem.node) {
         item.node = oldItem.node;
         item.children = oldItem.children;
         item.index = index;
         item.parent = component;
     } else {
-        if (oldItem) {
-            oldItem.removeEffects()
+
+        // Set children as it's used for patching in rendering
+        if (isSameComponent) {
             item.children = oldItem.children;
         }
 
@@ -363,8 +390,8 @@ function runRender(component) {
     effectStack.push((type, info) => {
         if (type !== "get") return;
 
-        component.effects.add(info.target)
-        depManager.sub(info.target, component)
+        component.instance.effects.add(info.target)
+        depManager.sub(info.target, component.instance)
     })
 
     const oldChildren = component.children;
@@ -378,6 +405,28 @@ function runRender(component) {
     console.log("Render Time", performance.now() - startTime, component)
 }
 
+function printVNode(node, indent = "") {
+    if (node instanceof BodyContainer) {
+        console.log(`${indent}<body>`)
+    } else if (node instanceof HeadContainer) {
+        console.log(`${indent}<head>`)
+    } else if (node instanceof ElementNode) {
+        console.log(`${indent}<${node.tag}>`)
+    } else if (node instanceof ComponentNode) {
+        console.log(`${indent}<Component ${node.renderFn.name}>`)
+    } else if (node instanceof TextNode) {
+        console.log(`${indent} #text ${node.text}`)
+    } else {
+        console.log(`${indent} <empty slot>`)
+    }
+
+    if (node && node.children) {
+        for (const child of node.children) {
+            printVNode(child, indent + "  ")
+        }
+    }
+}
+
 export class App {
     constructor(head, body) {
         this.head = head;
@@ -387,6 +436,11 @@ export class App {
     render() {
         renderQueue.queue(this.head)
         renderQueue.queue(this.body)
+    }
+
+    print() {
+        printVNode(this.head)
+        printVNode(this.body)
     }
 }
 

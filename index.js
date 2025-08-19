@@ -28,12 +28,13 @@ const app = new App(
     ]),
     body(() => [
         e("div", {}, t("Hi")),
-        c(exampleComponent, { test: someValue.value }),
+        c(exampleComponent, { }),
         someBool.value ? e("div", {}, t("Should be new anchor here")) : null,
         e("div", {}, t("content after component"))
     ])
 )
 
 app.render()
+window.app = app
 
 console.log(app)
