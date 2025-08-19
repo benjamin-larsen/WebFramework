@@ -202,11 +202,8 @@ export function c(component, properties) {
 }
 
 function findAnchor(oldRender, index) {
-    console.log("Find Anchor", oldRender, index)
-    for (const oldIndex in oldRender) {
-        if (Number(oldIndex) <= index) continue;
-
-        const item = oldRender[oldIndex]
+    for (var i = (index + 1); i < oldRender.length; i++) {
+        const item = oldRender[i]
         if (!item) continue;
 
         if (item instanceof ComponentNode) {
@@ -274,7 +271,7 @@ function patchComponent(component, item, oldItem, oldRender, index) {
 }
 
 function patch(component, oldRender, newRender) {
-    for (const index in newRender) {
+    for (var index = 0; index < newRender.length; index++) {
         const item = newRender[index]
         const oldItem = oldRender[index]
         
@@ -293,7 +290,8 @@ function patch(component, oldRender, newRender) {
 }
 
 function runRender(component) {
-    console.log("render", component)
+    const startTime = performance.now()
+
     if (!component.node) return;
     
     if (component instanceof ComponentNode) {
@@ -317,6 +315,8 @@ function runRender(component) {
     patch(component, oldChildren, rendered);
 
     effectStack.pop()
+
+    console.log("Render Time", performance.now() - startTime, component)
 }
 
 export class App {
