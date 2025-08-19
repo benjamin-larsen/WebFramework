@@ -65,7 +65,6 @@ class RenderQueue {
     }
 
     process() {
-        console.log("Flushing Queue", [...this.waiting])
         for (const component of this.waiting) {
             runRender(component);
         }
@@ -75,7 +74,6 @@ class RenderQueue {
     }
 
     queue(component) {
-        console.log("Queue", component)
         this.waiting.add(component)
 
         if (!this.renderId) {
@@ -154,16 +152,11 @@ class ElementNode {
         this.node = null;
     }
 
-    unmount(onlyEffects) {
+    unmount() {
         if (!this.node) return;
 
         for (const child of this.children) {
-            child.unmount(onlyEffects)
-        }
-
-        if (!onlyEffects) {
-            this.node.remove();
-            this.node = null;
+            child.unmount()
         }
     }
 }
@@ -180,8 +173,7 @@ class TextNode {
         this.node = null;
     }
 
-    unmount(onlyEffects) {
-        if (onlyEffects) return;
+    unmount() {
         if (!this.node) return;
         this.node.remove();
 
@@ -216,12 +208,12 @@ class ComponentNode {
         this.effects.clear()
     }
 
-    unmount(onlyEffects) {
+    unmount() {
         this.removeEffects()
         this.anchor = null
 
         for (const child of this.children) {
-            child.unmount(onlyEffects)
+            child.unmount()
         }
     }
 }
@@ -260,7 +252,7 @@ function resolveAnchor(anchor, parent) {
 }
 
 function patchElement(component, item, oldItem, oldRender, index) {
-    if (oldItem instanceof ElementNode && oldItem.node && oldItem.tag === item.tag && item.tag !== "h1") {
+    if (oldItem instanceof ElementNode && oldItem.node && oldItem.tag === item.tag) {
         item.node = oldItem.node;
         patch(item, oldItem.children, item.children)
     } else {
