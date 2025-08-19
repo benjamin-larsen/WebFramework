@@ -11,7 +11,7 @@ const someBool = reactive({ value: false })
 const someBool2 = reactive({ value: false })
 
 function innerComponent() {
-    return [c(() => [c(() => [c(() => [c(() => [c(() => [e("div", {}, t("Test"))], {})], {})], {})], {})], {})]
+    return [c(() => [c(() => [c(() => [c(() => [c(() => [e("h1", {}, t(someValue.value))], {})], {})], {})], {})], {})]
 }
 
 function exampleComponent(props) {
@@ -28,8 +28,8 @@ const app = new App(
     ]),
     body(() => [
         e("div", {}, t("Hi")),
-        someBool.value ? e("div", {}, t("Conditional Content")) : null,
         c(exampleComponent, { test: someValue.value }),
+        someBool.value ? e("div", {}, t("Should be new anchor here")) : null,
         e("div", {}, t("content after component"))
     ])
 )

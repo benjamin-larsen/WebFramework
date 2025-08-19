@@ -154,16 +154,17 @@ class ElementNode {
         this.node = null;
     }
 
-    unmount() {
+    unmount(onlyEffects) {
         if (!this.node) return;
 
         for (const child of this.children) {
-            child.unmount()
+            child.unmount(onlyEffects)
         }
 
-        this.node.remove();
-
-        this.node = null;
+        if (!onlyEffects) {
+            this.node.remove();
+            this.node = null;
+        }
     }
 }
 
@@ -179,7 +180,8 @@ class TextNode {
         this.node = null;
     }
 
-    unmount() {
+    unmount(onlyEffects) {
+        if (onlyEffects) return;
         if (!this.node) return;
         this.node.remove();
 
@@ -199,6 +201,7 @@ class ComponentNode {
         this.children = [];
         this.parent = null;
 
+        this.index = null;
         this.anchor = null;
         this.node = null;
 
@@ -213,11 +216,12 @@ class ComponentNode {
         this.effects.clear()
     }
 
-    unmount() {
+    unmount(onlyEffects) {
         this.removeEffects()
+        this.anchor = null
 
         for (const child of this.children) {
-            child.unmount()
+            child.unmount(onlyEffects)
         }
     }
 }
@@ -243,8 +247,20 @@ function findAnchor(oldRender, index) {
     return null;
 }
 
+function resolveAnchor(anchor, parent) {
+    if (anchor) return anchor
+
+    if (parent.anchor instanceof ComponentNode) {
+        return parent.anchor.anchor
+    } else if (parent.anchor) {
+        return parent.anchor
+    }
+
+    return null
+}
+
 function patchElement(component, item, oldItem, oldRender, index) {
-    if (oldItem instanceof ElementNode && oldItem.node && oldItem.tag === item.tag) {
+    if (oldItem instanceof ElementNode && oldItem.node && oldItem.tag === item.tag && item.tag !== "h1") {
         item.node = oldItem.node;
         patch(item, oldItem.children, item.children)
     } else {
@@ -257,7 +273,7 @@ function patchElement(component, item, oldItem, oldRender, index) {
 
         patch(item, oldItem ? oldItem.children : [], item.children)
 
-        component.node.insertBefore(el, findAnchor(oldRender, Number(index)) || component.anchor);
+        component.node.insertBefore(el, resolveAnchor(findAnchor(oldRender, Number(index)), component));
     }
 }
 
@@ -276,19 +292,23 @@ function patchText(component, item, oldItem, oldRender, index) {
         const el = document.createTextNode(item.text);
         item.node = el;
 
-        component.node.insertBefore(el, findAnchor(oldRender, Number(index)) || component.anchor);
+        component.node.insertBefore(el, resolveAnchor(findAnchor(oldRender, Number(index)), component));
     }
 }
 
 function patchComponent(component, item, oldItem, oldRender, index) {
-    if (false && oldItem instanceof ComponentNode && oldItem.renderFn === item.renderFn && oldItem.node) {
+    if (oldItem instanceof ComponentNode && oldItem.renderFn === item.renderFn && oldItem.node) {
         item.node = oldItem.node;
+        item.children = oldItem.children;
+        item.index = index;
+        item.parent = component;
     } else {
         if (oldItem) {
             oldItem.removeEffects()
             item.children = oldItem.children;
         }
 
+        item.index = index;
         item.parent = component;
         item.node = component.node;
         runRender(item)
@@ -311,7 +331,31 @@ function patch(component, oldRender, newRender) {
         }
     }
 
+    component.children = newRender;
+
     // add functionality to remove unused old items, without confusing keyed
+}
+
+function refreshComponentAnchor(component, noRecursion) {
+    const anchor = findAnchor(component.parent.children, component.index);
+
+    if (anchor) {
+        component.anchor = anchor
+    } else if (!noRecursion) {
+        const parentAnchor = component.parent.anchor;
+
+        if (parentAnchor instanceof ComponentNode) {
+            component.anchor = parentAnchor
+        } else {
+            component.anchor = component.parent
+        }
+
+        if (parentAnchor) {
+            refreshComponentAnchor(component.anchor, true)
+        }
+    } else {
+        component.anchor = null
+    }
 }
 
 function runRender(component) {
@@ -320,10 +364,7 @@ function runRender(component) {
     if (!component.node) return;
     
     if (component instanceof ComponentNode) {
-        const index = Number(component.parent.children.indexOf(component));
-        component.anchor = (index !== -1 ? findAnchor(component.parent.children, index) : null) || component.parent.anchor;
-
-        console.log(component.parent.anchor)
+        refreshComponentAnchor(component)
     }
 
     // clean up old effects that for some reason arent here this time
@@ -337,7 +378,6 @@ function runRender(component) {
     const oldChildren = component.children;
 
     const rendered = component.renderFn(component.properties)
-    component.children = rendered;
 
     patch(component, oldChildren, rendered);
 
