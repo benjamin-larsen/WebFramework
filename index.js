@@ -10,8 +10,12 @@ const someValue = reactive({ value: "hi" })
 const someBool = reactive({ value: false })
 const someBool2 = reactive({ value: false })
 
+function innerComponent() {
+    return [c(() => [c(() => [c(() => [c(() => [c(() => [e("div", {}, t("Test"))], {})], {})], {})], {})], {})]
+}
+
 function exampleComponent(props) {
-    return [e("div", {}, t(props.test)), someBool2.value ? e("div", {}, t("Conditional from Component")) : null, e("div", {}, t("Hey div from Component"))]
+    return [someBool2.value ? c(innerComponent, {}) : null]//[e("div", {}, t(props.test)), someBool2.value ? e("div", {}, t("Conditional from Component")) : null, e("div", {}, t("Hey div from Component"))]
 }
 
 window.someValue = someValue;

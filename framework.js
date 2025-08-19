@@ -53,14 +53,40 @@ class DependencyManager {
         if (!subscribers) return;
 
         for (const sub of subscribers) {
-            // make this batched with requsetAnimationFrame
-            runRender(sub)
+            renderQueue.queue(sub)
+        }
+    }
+}
+
+class RenderQueue {
+    constructor() {
+        this.waiting = new Set();
+        this.renderId = null;
+    }
+
+    process() {
+        console.log("Flushing Queue", [...this.waiting])
+        for (const component of this.waiting) {
+            runRender(component);
+        }
+
+        this.waiting.clear();
+        this.renderId = null;
+    }
+
+    queue(component) {
+        console.log("Queue", component)
+        this.waiting.add(component)
+
+        if (!this.renderId) {
+            this.renderId = requestAnimationFrame(this.process.bind(this));
         }
     }
 }
 
 const effectStack = new EffectStack()
 const depManager = new DependencyManager()
+const renderQueue = new RenderQueue()
 
 export function reactive(target) {
     return new Proxy(target, {
@@ -264,7 +290,6 @@ function patchComponent(component, item, oldItem, oldRender, index) {
         }
 
         item.parent = component;
-        item.anchor = findAnchor(oldRender, Number(index))
         item.node = component.node;
         runRender(item)
     }
@@ -296,7 +321,9 @@ function runRender(component) {
     
     if (component instanceof ComponentNode) {
         const index = Number(component.parent.children.indexOf(component));
-        component.anchor = index !== -1 ? findAnchor(component.parent.children, index) : null;
+        component.anchor = (index !== -1 ? findAnchor(component.parent.children, index) : null) || component.parent.anchor;
+
+        console.log(component.parent.anchor)
     }
 
     // clean up old effects that for some reason arent here this time
@@ -326,8 +353,8 @@ export class App {
     }
 
     render() {
-        runRender(this.head)
-        runRender(this.body)
+        renderQueue.queue(this.head)
+        renderQueue.queue(this.body)
     }
 }
 
