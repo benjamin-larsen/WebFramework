@@ -86,6 +86,10 @@ const effectStack = new EffectStack()
 const depManager = new DependencyManager()
 const renderQueue = new RenderQueue()
 
+window.depManager = depManager
+window.effectStack = effectStack
+window.renderQueue = renderQueue
+
 export function reactive(target) {
     return new Proxy(target, {
         get(target, prop, receiver) {
@@ -177,11 +181,13 @@ class ElementNode {
         if (!this.node) return;
 
         for (const child of this.children) {
+            if (!child) continue;
             child.unmount()
         }
 
         this.node.remove();
         this.node = null;
+        this.children = null;
     }
 }
 
@@ -226,12 +232,18 @@ class ComponentNode {
     }
 
     unmount() {
-        this.instance.destroy()
-        this.anchor = null
+        this.instance.destroy();
+        this.instance = null;
+        this.anchor = null;
 
         for (const child of this.children) {
+            if (!child) continue;
             child.unmount()
         }
+
+        // Prevent Memory Leak
+        this.parent = null;
+        this.children = null;
     }
 }
 
@@ -256,6 +268,20 @@ function findAnchor(oldRender, index) {
     return null;
 }
 
+// Make better and more efficent system later, perhaps using two-phase rendering
+function findComponentAnchor(component) {
+    if (!(component instanceof ComponentNode)) return null;
+    const anchor = findAnchor(component.parent.children, component.index)
+
+    if (anchor) {
+        return anchor;
+    } else {
+        return findComponentAnchor(component.parent)
+    }
+}
+
+window.findComponentAnchor = findComponentAnchor
+
 function resolveAnchor(anchor, parent) {
     if (anchor) return anchor
 
@@ -275,6 +301,7 @@ function patchElement(component, item, oldItem, oldRender, index) {
     } else {
         if (oldItem) {
             oldItem.unmount()
+            oldItem = null
         }
 
         const el = document.createElement(item.tag);
@@ -325,6 +352,8 @@ function patchComponent(component, item, oldItem, oldRender, index) {
         // Set children as it's used for patching in rendering
         if (isSameComponent) {
             item.children = oldItem.children;
+        } else if (oldItem) {
+            oldItem.unmount()
         }
 
         item.index = index;
@@ -361,32 +390,35 @@ function refreshComponentAnchor(component, noRecursion) {
     if (anchor) {
         component.anchor = anchor
     } else if (!noRecursion) {
-        const parentAnchor = component.parent.anchor;
+        /*const parentAnchor = component.parent.anchor;
 
         if (parentAnchor instanceof ComponentNode) {
             component.anchor = parentAnchor
-        } else {
-            component.anchor = component.parent
-        }
-
-        if (parentAnchor) {
             refreshComponentAnchor(component.anchor, true)
-        }
+        } else if (component.parent instanceof ComponentNode) {
+            component.anchor = component.parent
+            refreshComponentAnchor(component.anchor, true)
+        } else {
+            component.anchor = null
+        }*/
+       component.anchor = findComponentAnchor(component.parent)
     } else {
         component.anchor = null
     }
 }
 
 function runRender(component) {
+    console.log("Render", component)
     const startTime = performance.now()
 
-    if (!component.node) return;
+    if (!component.instance) return;
     
     if (component instanceof ComponentNode) {
         refreshComponentAnchor(component)
     }
 
-    // clean up old effects that for some reason arent here this time
+    component.instance.cleanEffects()
+
     effectStack.push((type, info) => {
         if (type !== "get") return;
 
@@ -402,6 +434,7 @@ function runRender(component) {
 
     effectStack.pop()
 
+    //window.time = performance.now() - startTime
     console.log("Render Time", performance.now() - startTime, component)
 }
 
@@ -415,7 +448,7 @@ function printVNode(node, indent = "") {
     } else if (node instanceof ComponentNode) {
         console.log(`${indent}<Component ${node.renderFn.name}>`)
     } else if (node instanceof TextNode) {
-        console.log(`${indent} #text ${node.text}`)
+        console.log(`${indent}#text ${node.text}`)
     } else {
         console.log(`${indent} <empty slot>`)
     }
