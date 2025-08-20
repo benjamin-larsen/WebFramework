@@ -169,10 +169,14 @@ export function body(attributes, ...children) {
 }
 
 class ElementNode {
-    constructor(tag, attributes, children) {
+    constructor(tag, properties, children) {
         this.tag = tag;
-        this.attributes = attributes;
+        this.properties = properties;
         this.children = children;
+
+        this.refFn = null;
+        this.attributes = {};
+        this.eventListeners = {};
 
         this.node = null;
     }
@@ -183,6 +187,10 @@ class ElementNode {
         for (const child of this.children) {
             if (!child) continue;
             child.unmount()
+        }
+
+        if (this.refFn) {
+            this.refFn(null)
         }
 
         this.node.remove();
@@ -292,6 +300,10 @@ function resolveAnchor(anchor, parent) {
     }
 
     return null
+}
+
+function patchAttributes(component, oldItem, item) {
+
 }
 
 function patchElement(component, item, oldItem, oldRender, index) {
@@ -408,7 +420,6 @@ function refreshComponentAnchor(component, noRecursion) {
 }
 
 function runRender(component) {
-    console.log("Render", component)
     const startTime = performance.now()
 
     if (!component.instance) return;
@@ -460,20 +471,56 @@ function printVNode(node, indent = "") {
     }
 }
 
+// Create Virtual Node (inferred)
+// Element: v(tag, attributes?, text?, ...children)
+// Component: v(component, properties?)
+export function v(type, ...data) {
+    switch (typeof type) {
+        case "string": {
+            let children = [];
+            let properties = {};
+
+            if (typeof data[0] === 'object') {
+                properties = data[0];
+                data = data.slice(1);
+            }
+
+            for (const child of data) {
+                if (typeof child === 'string') {
+                    children.push(new TextNode(child))
+                } else {
+                    children.push(child)
+                }
+            }
+
+            return new ElementNode(type, properties, children)
+        }
+
+        case "function": {
+            return new ComponentNode(type, data[0] || {})
+        }
+
+        default: {
+            return null
+        }
+    }
+}
+
 export class App {
-    constructor(head, body) {
-        this.head = head;
-        this.body = body;
+    constructor(...children) {
+        this.children = children;
     }
 
     render() {
-        renderQueue.queue(this.head)
-        renderQueue.queue(this.body)
+        for (const child of this.children) {
+            renderQueue.queue(child)
+        }
     }
 
     print() {
-        printVNode(this.head)
-        printVNode(this.body)
+        for (const child of this.children) {
+            printVNode(child)
+        }
     }
 }
 
