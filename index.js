@@ -7,7 +7,8 @@ import {
 } from './framework.js'
 
 const someValue = reactive({ value: "hi" })
-const someBool = reactive({ value: false })
+const boolObj = { value: false }
+const someBool = reactive(boolObj)
 const someBool2 = reactive({ value: false })
 const title = reactive({ value: "Web Framework test" })
 
@@ -48,6 +49,10 @@ function innerComponent() {
 }
 
 function exampleComponent(props) {
+    if (boolObj.value == false) {
+        someBool.value = true
+    }
+
     return [
         v(innerComponent),
         v("div", "content after component")

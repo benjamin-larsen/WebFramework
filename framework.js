@@ -65,12 +65,19 @@ class RenderQueue {
     }
 
     process() {
-        for (const component of this.waiting) {
+        const items = [...this.waiting];
+        this.waiting.clear();
+        this.processing = true;
+
+        for (const component of items) {
             runRender(component);
         }
 
-        this.waiting.clear();
-        this.renderId = null;
+        if (this.waiting.size > 0) {
+            this.renderId = requestAnimationFrame(this.process.bind(this));
+        } else {
+            this.renderId = null;
+        }
     }
 
     queue(component) {
