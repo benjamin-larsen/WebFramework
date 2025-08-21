@@ -53,7 +53,7 @@ class DependencyManager {
         if (!subscribers) return;
 
         for (const sub of subscribers) {
-            renderQueue.queue(sub.vnode)
+            renderQueue.queue(sub)
         }
     }
 }
@@ -69,8 +69,10 @@ class RenderQueue {
         this.waiting.clear();
         this.processing = true;
 
-        for (const component of items) {
-            runRender(component);
+        for (const componentInstance of items) {
+            if (!componentInstance.vnode) continue;
+
+            runRender(componentInstance.vnode);
         }
 
         if (this.waiting.size > 0) {
@@ -97,31 +99,45 @@ window.depManager = depManager
 window.effectStack = effectStack
 window.renderQueue = renderQueue
 
-export function reactive(target) {
-    return new Proxy(target, {
-        get(target, prop, receiver) {
-            const currentEffect = effectStack.getActiveEffect();
+const reactiveHandler = {
+    get(target, prop, receiver) {
+        const currentEffect = effectStack.getActiveEffect();
 
-            if (currentEffect) {
-                currentEffect("get", {target, prop, receiver})
-            }
-
-            return target[prop];
-        },
-        set(target, prop, value, receiver) {
-            const currentEffect = effectStack.getActiveEffect();
-
-            if (currentEffect) {
-                currentEffect("set", {target, prop, value, receiver})
-            }
-
-            target[prop] = value;
-
-            depManager.trigger(target)
-
-            return true;
+        if (currentEffect) {
+            currentEffect("get", {target, prop, receiver})
         }
-    });
+
+        const value = target[prop];
+
+        if (false && value !== null && typeof value === 'object') {
+            return reactive(value)
+        } else {
+            return value
+        }
+
+        return target[prop];
+    },
+    set(target, prop, value, receiver) {
+        const currentEffect = effectStack.getActiveEffect();
+
+        if (currentEffect) {
+            currentEffect("set", {target, prop, value, receiver})
+        }
+
+        const shouldTrigger = target[prop] !== value;
+
+        target[prop] = value;
+
+        if (shouldTrigger) {
+            depManager.trigger(target)
+        }
+
+        return true;
+    }
+}
+
+export function reactive(target) {
+    return new Proxy(target, reactiveHandler);
 }
 
 class ComponentInstance {
@@ -129,6 +145,10 @@ class ComponentInstance {
         this.vnode = vnode;
 
         this.effects = new Set();
+    }
+
+    $forceUpdate() {
+        renderQueue.queue(this)
     }
 
     cleanEffects() {
@@ -520,7 +540,7 @@ export class App {
 
     render() {
         for (const child of this.children) {
-            renderQueue.queue(child)
+            renderQueue.queue(child.instance)
         }
     }
 
