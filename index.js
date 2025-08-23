@@ -4,13 +4,18 @@ import {
     body,
     reactive,
     e, t, c, v
-} from './framework.js'
+} from './framework/index.js'
 
 const someValue = reactive({ value: "hi" })
 const boolObj = { value: false }
 const someBool = reactive(boolObj)
 const someBool2 = reactive({ value: false })
+const isRunning = reactive({ value: false })
 const title = reactive({ value: "Web Framework test" })
+
+window.isRunning = isRunning;
+
+const start = Date.now()
 
 /*function newComponent() {
     return [e("div", {}, t("new comp"))]
@@ -53,10 +58,18 @@ function exampleComponent(props) {
         someBool.value = true
     }
 
-    return [
-        v(innerComponent),
-        v("div", "content after component")
+    if (isRunning.value) {
+        //this.$forceUpdate()
+        //requestAnimationFrame(this.$forceUpdate.bind(this))
+    }
+
+    const arr = [
+        v("div", {}, v(innerInnerComponent))
     ]
+
+    console.log(arr)
+
+    return arr;
 }
 
 window.someValue = someValue;
@@ -80,10 +93,13 @@ const app = new App(
         v("title", title.value)
     ]),
     body(() => [
-        v("div", "Hi", " hah"),
+        v("div", { onclick: function () { alert('test')}, class: ["test", "test2"] }, "Hi", " hah"),
         v(exampleComponent),
-        v(someBool.value ? innerInnerComponent : newComponent),
+        //v(someBool.value ? innerInnerComponent : newComponent),
         v("div", "Hi")
+        /*v(() => [
+
+        ])*/
     ])
 )
 
