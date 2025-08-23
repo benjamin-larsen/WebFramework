@@ -5,7 +5,7 @@ export class HeadContainer {
         this.renderFn = renderFn;
         this.children = [];
 
-        this.node = document.head;
+        this.el = document.head;
 
         this.instance = new ComponentInstance(this);
     }
@@ -20,7 +20,7 @@ export class BodyContainer {
         this.renderFn = renderFn;
         this.children = [];
 
-        this.node = document.body;
+        this.el = document.body;
 
         this.instance = new ComponentInstance(this);
     }
@@ -40,11 +40,11 @@ export class ElementNode {
         this.attributes = new Map();
         this.eventListeners = new Map();
 
-        this.node = null;
+        this.el = null;
     }
 
     unmount() {
-        if (!this.node) return;
+        if (!this.el) return;
 
         for (const child of this.children) {
             if (!child) continue;
@@ -55,8 +55,8 @@ export class ElementNode {
             this.refFn(null)
         }
 
-        this.node.remove();
-        this.node = null;
+        this.el.remove();
+        this.el = null;
         this.children = null;
     }
 }
@@ -70,14 +70,14 @@ export class TextNode {
     constructor(text) {
         this.text = text;
 
-        this.node = null;
+        this.el = null;
     }
 
     unmount() {
-        if (!this.node) return;
+        if (!this.el) return;
 
-        this.node.remove();
-        this.node = null;
+        this.el.remove();
+        this.el = null;
     }
 }
 
@@ -95,7 +95,7 @@ export class ComponentNode {
 
         this.index = null;
         this.anchor = null;
-        this.node = null;
+        this.el = null;
         this.instance = null;
 
         this.effects = new Set();

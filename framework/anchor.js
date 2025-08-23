@@ -9,7 +9,7 @@ export function findAnchor(oldRender, index) {
             const anchor = findAnchor(item.children, -1);
             if (anchor) return anchor
         } else {
-            return item.node
+            return item.el
         }
     }
 
@@ -36,4 +36,14 @@ export function refreshComponentAnchor(component) {
     } else {
        component.anchor = findComponentAnchor(component.parent)
     }
+}
+
+export function resolveAnchor(anchor, parent) {
+    if (anchor) return anchor
+
+    if (parent.anchor) {
+        return parent.anchor
+    }
+
+    return null
 }
