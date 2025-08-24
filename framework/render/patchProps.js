@@ -28,17 +28,33 @@ function patchAttribute(prevNode, nextNode, attr, value) {
     nextNode.el.setAttribute(attr, value)
 }
 
+function createInvoker(func, node) {
+    function invoker(...args) {
+        if (!invoker.func) return;
+        invoker.func.apply(
+            invoker.node,
+            args
+        )
+    }
+
+    invoker.node = node;
+    invoker.func = func;
+
+    return invoker;
+}
+
 function patchEvent(prevNode, nextNode, eventName, listenerFn) {
-    nextNode.eventListeners.set(eventName, listenerFn)
-
     if (prevNode && prevNode.eventListeners.has(eventName)) {
-        const oldEventListener = prevNode.eventListeners.get(eventName);
-        if (oldEventListener === listenerFn) return;
-
-        prevNode.el.removeEventListener(eventName, oldEventListener)
-        nextNode.el.addEventListener(eventName, listenerFn)
+        const invoker = prevNode.eventListeners.get(eventName);
+        nextNode.eventListeners.set(eventName, invoker)
+        
+        invoker.func = listenerFn;
+        invoker.node = nextNode;
     } else {
-        nextNode.el.addEventListener(eventName, listenerFn)
+        const invoker = createInvoker(listenerFn, nextNode);
+        nextNode.eventListeners.set(eventName, invoker)
+
+        nextNode.el.addEventListener(eventName, invoker)
     }
 }
 
