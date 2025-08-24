@@ -1,10 +1,27 @@
 import { renderQueue, depManager } from "./render/index.js";
+import { FUNCTION_CACHE_LIMIT } from "./constants.js";
 
 export class ComponentInstance {
     constructor(vnode) {
         this.vnode = vnode;
 
         this.effects = new Set();
+        this.cachedFunctions = new Map();
+        this.cacheHistory = [];
+    }
+
+    getFn(key, func, force = false) {
+        if (!force && this.cachedFunctions.has(key)) return this.cachedFunctions.get(key);
+
+        // In Future: probably evict based on lowest usage count
+        if (this.cacheHistory.length >= FUNCTION_CACHE_LIMIT) {
+            const evicted = this.cacheHistory.shift()
+            this.cachedFunctions.delete(evicted)
+        }
+
+        this.cacheHistory.push(key)
+        this.cachedFunctions.set(key, func);
+        return func;
     }
 
     $forceUpdate() {

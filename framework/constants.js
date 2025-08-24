@@ -1,0 +1,1 @@
+export const FUNCTION_CACHE_LIMIT = 20;
