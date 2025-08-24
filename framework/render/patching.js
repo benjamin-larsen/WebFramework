@@ -91,6 +91,12 @@ export function patch(component, oldRender, newRender) {
         }
     }
 
+    for (var index = newRender.length; index < oldRender.length; index++) {
+        const item = oldRender[index];
+
+        if (item) item.unmount()
+    }
+
     component.children = newRender;
 
     // add functionality to remove unused old items, without confusing keyed
