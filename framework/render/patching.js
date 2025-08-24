@@ -4,7 +4,7 @@ import { patchElementProperties } from "./patchProps.js";
 import { ComponentNode, ElementNode, TextNode } from "../vnode.js";
 import { ComponentInstance } from "../component.js"
 
-function patchElement(component, nextNode, prevNode, oldRender, index) {
+function patchElement(parentNode, nextNode, prevNode, prevChildren, index) {
     if (prevNode instanceof ElementNode && prevNode.el && prevNode.tag === nextNode.tag) {
         nextNode.el = prevNode.el;
         patch(nextNode, prevNode.children, nextNode.children)
@@ -20,12 +20,12 @@ function patchElement(component, nextNode, prevNode, oldRender, index) {
 
         patch(nextNode, [], nextNode.children)
 
-        component.el.insertBefore(el, resolveAnchor(findAnchor(oldRender, Number(index)), component));
+        parentNode.el.insertBefore(el, resolveAnchor(findAnchor(prevChildren, Number(index)), parentNode));
         patchElementProperties(null, nextNode);
     }
 }
 
-function patchText(component, nextNode, prevNode, oldRender, index) {
+function patchText(parentNode, nextNode, prevNode, prevChildren, index) {
     if (prevNode instanceof TextNode && prevNode.el) {
         nextNode.el = prevNode.el;
 
@@ -40,11 +40,11 @@ function patchText(component, nextNode, prevNode, oldRender, index) {
         const el = document.createTextNode(nextNode.text);
         nextNode.el = el;
 
-        component.el.insertBefore(el, resolveAnchor(findAnchor(oldRender, Number(index)), component));
+        parentNode.el.insertBefore(el, resolveAnchor(findAnchor(prevChildren, Number(index)), parentNode));
     }
 }
 
-function patchComponent(component, nextNode, prevNode, oldRender, index) {
+function patchComponent(parentNode, nextNode, prevNode, index) {
     const isSameComponent = prevNode instanceof ComponentNode && prevNode.renderFn === nextNode.renderFn;
 
     if (isSameComponent && prevNode.instance) {
@@ -58,7 +58,7 @@ function patchComponent(component, nextNode, prevNode, oldRender, index) {
         nextNode.el = prevNode.el;
         nextNode.children = prevNode.children;
         nextNode.index = index;
-        nextNode.parent = component;
+        nextNode.parent = parentNode;
     } else {
 
         // Set children as it's used for patching in rendering
@@ -69,35 +69,52 @@ function patchComponent(component, nextNode, prevNode, oldRender, index) {
         }
 
         nextNode.index = index;
-        nextNode.parent = component;
-        nextNode.el = component.el;
+        nextNode.parent = parentNode;
+        nextNode.el = parentNode.el;
         runRender(nextNode)
     }
 }
 
-export function patch(component, oldRender, newRender) {
-    for (var index = 0; index < newRender.length; index++) {
-        const nextNode = newRender[index]
-        const prevNode = oldRender[index]
+export function patch(parentNode, prevChildren, nextChildren) {
+    for (var index = 0; index < nextChildren.length; index++) {
+        const nextNode = nextChildren[index]
+        const prevNode = prevChildren[index]
         
         if (nextNode instanceof ElementNode) {
-            patchElement(component, nextNode, prevNode, oldRender, index)
+            patchElement(
+                parentNode,
+                nextNode,
+                prevNode,
+                prevChildren,
+                index
+            )
         } else if (nextNode instanceof TextNode) {
-            patchText(component, nextNode, prevNode, oldRender, index)
+            patchText(
+                parentNode,
+                nextNode,
+                prevNode,
+                prevChildren,
+                index
+            )
         } else if (nextNode instanceof ComponentNode) {
-            patchComponent(component, nextNode, prevNode, oldRender, index)
+            patchComponent(
+                parentNode,
+                nextNode,
+                prevNode,
+                index
+            )
         } else if (prevNode) {
             prevNode.unmount()
         }
     }
 
-    for (var index = newRender.length; index < oldRender.length; index++) {
-        const item = oldRender[index];
+    for (var index = nextChildren.length; index < prevChildren.length; index++) {
+        const item = prevChildren[index];
 
         if (item) item.unmount()
     }
 
-    component.children = newRender;
+    parentNode.children = nextChildren;
 
     // add functionality to remove unused old items, without confusing keyed
 }
