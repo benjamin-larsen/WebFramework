@@ -131,7 +131,7 @@ export function v(type, ...data) {
             let children = [];
             let properties = {};
 
-            if (typeof data[0] === 'object') {
+            if (data[0] !== null && typeof data[0] === 'object' && data[0].constructor === Object) {
                 properties = data[0];
                 data = data.slice(1);
             }
