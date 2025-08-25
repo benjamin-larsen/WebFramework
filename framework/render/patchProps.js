@@ -1,5 +1,5 @@
 function patchClassName(prevNode, nextNode, classList) {
-    let computedClass = classList;
+    let computedClass = classList || "";
 
     if (Array.isArray(classList)) {
         computedClass = classList.join(" ")
@@ -21,9 +21,19 @@ function patchClassName(prevNode, nextNode, classList) {
 }
 
 function patchAttribute(prevNode, nextNode, attr, value) {
+    const hasPrevAttr = prevNode && prevNode.attributes.has(attr);
+
+    if (value === null || value === undefined) {
+        if (hasPrevAttr && prevNode.el) {
+            prevNode.el.removeAttribute(attr)
+        }
+
+        return
+    }
+
     nextNode.attributes.set(attr, value)
 
-    if (prevNode && prevNode.attributes.get(attr) === value) return;
+    if (hasPrevAttr && prevNode.attributes.get(attr) === value) return;
 
     nextNode.el.setAttribute(attr, value)
 }
@@ -44,7 +54,20 @@ function createInvoker(func, node) {
 }
 
 function patchEvent(prevNode, nextNode, eventName, listenerFn) {
-    if (prevNode && prevNode.eventListeners.has(eventName)) {
+    const hasPrevInvoker = prevNode && prevNode.eventListeners.has(eventName);
+
+    if (typeof listenerFn !== 'function') {
+        if (hasPrevInvoker && prevNode.el) {
+            prevNode.el.removeEventListener(
+                eventName,
+                prevNode.eventListeners.get(eventName)
+            )
+        }
+
+        return;
+    }
+
+    if (hasPrevInvoker) {
         const invoker = prevNode.eventListeners.get(eventName);
         nextNode.eventListeners.set(eventName, invoker)
         
@@ -58,13 +81,8 @@ function patchEvent(prevNode, nextNode, eventName, listenerFn) {
     }
 }
 
-export function patchElementProperties(prevNode, nextNode) {
-    const patchedProps = new Set()
-    for (const [prop, value] of Object.entries(nextNode.properties)) {
-        if (value === null || value === undefined) continue;
-        patchedProps.add(prop)
-
-        if (prop.startsWith("on")) {
+export function patchProp(prevNode, nextNode, prop, value) {
+    if (prop.startsWith("on")) {
             patchEvent(
                 prevNode,
                 nextNode,
@@ -74,12 +92,13 @@ export function patchElementProperties(prevNode, nextNode) {
         } else if (prop === "ref") {
             nextNode.refFn = value;
             
-            if (prevNode && prevNode.refFn) {
-                if (prevNode.refFn === value) continue;
+            if (prevNode && typeof prevNode.refFn === 'function') {
+                if (prevNode.refFn === value) return;
 
                 prevNode.refFn(null)
-                value(nextNode.el)
-            } else {
+            }
+
+            if (typeof value === 'function') {
                 value(nextNode.el)
             }
         } else if (prop === "class") {
@@ -95,6 +114,23 @@ export function patchElementProperties(prevNode, nextNode) {
                 prop,
                 value
             )
+        }
+}
+
+export function patchProps(prevNode, nextNode) {
+    for (const [prop, value] of Object.entries(nextNode.properties)) {
+        if (value === null || value === undefined) continue;
+
+        patchProp(prevNode, nextNode, prop, value)
+    }
+
+    if (prevNode) {
+        for (const prop of Object.keys(prevNode.properties)) {
+            const nextProp = nextNode.properties[prop];
+
+            if (nextProp !== null && nextProp !== undefined) continue;
+
+            patchProp(prevNode, nextNode, prop, null)
         }
     }
 }

@@ -33,7 +33,7 @@ export function body(attributes, ...children) {
 export class ElementNode {
     constructor(tag, properties, children) {
         this.tag = tag;
-        this.properties = properties;
+        this.properties = Object.assign({}, properties);
         this.children = children;
 
         this.refFn = null;
@@ -89,7 +89,7 @@ export function t(text) {
 export class ComponentNode {
     constructor(renderFn, properties) {
         this.renderFn = renderFn;
-        this.properties = properties;
+        this.properties = Object.assign({}, properties);
         this.children = [];
         this.parent = null;
 

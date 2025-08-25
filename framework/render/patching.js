@@ -1,14 +1,15 @@
 import { runRender } from "./index.js";
 import { findAnchor, resolveAnchor } from "../anchor.js";
-import { patchElementProperties } from "./patchProps.js";
+import { patchProps } from "./patchProps.js";
 import { ComponentNode, ElementNode, TextNode } from "../vnode.js";
 import { ComponentInstance } from "../component.js"
+import { shallowCompareObj } from "../helpers.js";
 
 function patchElement(parentNode, nextNode, prevNode, prevChildren, index) {
     if (prevNode instanceof ElementNode && prevNode.el && prevNode.tag === nextNode.tag) {
         nextNode.el = prevNode.el;
         patch(nextNode, prevNode.children, nextNode.children)
-        patchElementProperties(prevNode, nextNode);
+        patchProps(prevNode, nextNode);
     } else {
         if (prevNode) {
             prevNode.unmount()
@@ -19,9 +20,9 @@ function patchElement(parentNode, nextNode, prevNode, prevChildren, index) {
         nextNode.el = el;
 
         patch(nextNode, [], nextNode.children)
-
+        patchProps(null, nextNode);
+        
         parentNode.el.insertBefore(el, resolveAnchor(findAnchor(prevChildren, Number(index)), parentNode));
-        patchElementProperties(null, nextNode);
     }
 }
 
@@ -54,7 +55,14 @@ function patchComponent(parentNode, nextNode, prevNode, index) {
         nextNode.instance = new ComponentInstance(nextNode)
     }
 
-    if (isSameComponent && prevNode.el) {
+    if (
+        isSameComponent
+        && prevNode.el &&
+        shallowCompareObj(
+            prevNode.properties,
+            nextNode.properties
+        )
+    ) {
         nextNode.el = prevNode.el;
         nextNode.children = prevNode.children;
         nextNode.index = index;

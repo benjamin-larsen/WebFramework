@@ -19,12 +19,6 @@ const reactiveHandler = {
         return target[prop];
     },
     set(target, prop, value, receiver) {
-        const currentEffect = effectStack.getActiveEffect();
-
-        if (currentEffect) {
-            currentEffect("set", {target, prop, value, receiver})
-        }
-
         const shouldTrigger = target[prop] !== value;
 
         target[prop] = value;
@@ -34,6 +28,23 @@ const reactiveHandler = {
         }
 
         return true;
+    },
+    ownKeys(target) {
+        const currentEffect = effectStack.getActiveEffect();
+
+        if (currentEffect) {
+            currentEffect("get", { target })
+        }
+
+        return Object.keys(target)
+    },
+    deleteProperty(target, prop) {
+        if (prop in target) {
+            delete target[prop]
+            depManager.trigger(target)
+        }
+
+        return true
     }
 }
 

@@ -60,6 +60,23 @@ class DependencyManager {
             renderQueue.queue(sub)
         }
     }
+
+    withTracking(instance, func) {
+        effectStack.push((type, info) => {
+            if (type !== "get") return;
+
+            instance.effects.add(info.target)
+            depManager.sub(info.target, instance)
+        })
+
+        try {
+            return func()
+        } catch(e) {
+            throw e
+        } finally {
+            effectStack.pop()
+        }
+    }
 }
 
 class RenderQueue {
@@ -109,20 +126,17 @@ export function runRender(component) {
 
     component.instance.cleanEffects()
 
-    effectStack.push((type, info) => {
-        if (type !== "get") return;
-
-        component.instance.effects.add(info.target)
-        depManager.sub(info.target, component.instance)
-    })
-
     const oldChildren = component.children;
 
-    const rendered = component.renderFn.call(component.instance, component.properties)
+    const rendered = depManager.withTracking(
+        component.instance,
+        component.renderFn.bind(
+            component.instance,
+            component.properties
+        )
+    )
 
     patch(component, oldChildren, rendered);
-
-    effectStack.pop()
 
     console.log("Render Time", performance.now() - startTime, component)
 }
