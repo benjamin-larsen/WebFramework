@@ -17,10 +17,9 @@ export function shallowCompareObj(objA, objB) {
        keysB.includes(key ("b")) = false
     */
 
-    // TODO: Test performance difference between increment versus for in, and between .includes and in
     for (var i = 0; i < keysA.length; i++) {
         const key = keysA[i];
-        if (!keysB.includes(key)) return false;
+        if (!(key in keysB)) return false;
 
         const valA = objA[key];
         const valB = objB[key];
