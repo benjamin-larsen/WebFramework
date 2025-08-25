@@ -92,7 +92,7 @@ class RenderQueue {
         for (const componentInstance of items) {
             if (!componentInstance.vnode) continue;
 
-            runRender(componentInstance.vnode);
+            renderNode(componentInstance.vnode);
         }
 
         if (this.waiting.size > 0) {
@@ -115,28 +115,28 @@ export const effectStack = new EffectStack()
 export const depManager = new DependencyManager()
 export const renderQueue = new RenderQueue()
 
-export function runRender(component) {
+export function renderNode(node) {
     const startTime = performance.now()
 
-    if (!component.instance) return;
+    if (!node.instance) return;
     
-    if (component instanceof ComponentNode) {
-        refreshComponentAnchor(component)
+    if (node instanceof ComponentNode) {
+        refreshComponentAnchor(node)
     }
 
-    component.instance.cleanEffects()
+    node.instance.cleanEffects()
 
-    const oldChildren = component.children;
+    const prevChildren = node.children;
 
-    const rendered = depManager.withTracking(
-        component.instance,
-        component.renderFn.bind(
-            component.instance,
-            component.properties
+    const nextChildren = depManager.withTracking(
+        node.instance,
+        node.renderFn.bind(
+            node.instance,
+            node.properties
         )
     )
 
-    patch(component, oldChildren, rendered);
+    patch(node, prevChildren, nextChildren);
 
-    console.log("Render Time", performance.now() - startTime, component)
+    console.log("Render Time", performance.now() - startTime, node)
 }

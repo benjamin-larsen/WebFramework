@@ -1,4 +1,4 @@
-import { runRender } from "./index.js";
+import { renderNode } from "./index.js";
 import { findAnchor, resolveAnchor } from "../anchor.js";
 import { patchProps } from "./patchProps.js";
 import { ComponentNode, ElementNode, TextNode } from "../vnode.js";
@@ -79,7 +79,7 @@ function patchComponent(parentNode, nextNode, prevNode, index) {
         nextNode.index = index;
         nextNode.parent = parentNode;
         nextNode.el = parentNode.el;
-        runRender(nextNode)
+        renderNode(nextNode)
     }
 }
 
