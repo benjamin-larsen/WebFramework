@@ -19,7 +19,7 @@ export function shallowCompareObj(objA, objB) {
 
     for (var i = 0; i < keysA.length; i++) {
         const key = keysA[i];
-        if (!(key in keysB)) return false;
+        if (!(key in objB)) return false;
 
         const valA = objA[key];
         const valB = objB[key];
