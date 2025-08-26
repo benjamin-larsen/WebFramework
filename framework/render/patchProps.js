@@ -13,6 +13,7 @@ function patchClassName(prevNode, nextNode, classList) {
         computedClass = classArray.join(" ")
     }
 
+    nextNode.properties.class = computedClass;
 
     if (prevNode && prevNode.properties.class === computedClass) return;
 

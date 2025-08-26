@@ -87,6 +87,11 @@ export function patch(parentNode, prevChildren, nextChildren) {
     for (var index = 0; index < nextChildren.length; index++) {
         const nextNode = nextChildren[index]
         const prevNode = prevChildren[index]
+
+        if (nextNode === null || typeof nextNode !== "object") {
+            if (prevNode) prevNode.unmount()
+            return;
+        }
         
         if (nextNode.constructor === ElementNode) {
             patchElement(
@@ -111,8 +116,6 @@ export function patch(parentNode, prevChildren, nextChildren) {
                 prevNode,
                 index
             )
-        } else if (prevNode) {
-            prevNode.unmount()
         }
     }
 
