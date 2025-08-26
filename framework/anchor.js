@@ -5,7 +5,7 @@ export function findAnchor(oldRender, index) {
         const item = oldRender[i]
         if (!item) continue;
 
-        if (item instanceof ComponentNode) {
+        if (item.constructor === ComponentNode) {
             const anchor = findAnchor(item.children, -1);
             if (anchor) return anchor
         } else {
@@ -18,7 +18,7 @@ export function findAnchor(oldRender, index) {
 
 // Make better and more efficent system later, perhaps using two-phase rendering
 function findComponentAnchor(component) {
-    if (!(component instanceof ComponentNode)) return null;
+    if (!(component && component.constructor === ComponentNode)) return null;
     const anchor = findAnchor(component.parent.children, component.index)
 
     if (anchor) {
@@ -36,14 +36,4 @@ export function refreshComponentAnchor(component) {
     } else {
        component.anchor = findComponentAnchor(component.parent)
     }
-}
-
-export function resolveAnchor(anchor, parent) {
-    if (anchor) return anchor
-
-    if (parent.anchor) {
-        return parent.anchor
-    }
-
-    return null
 }

@@ -1,12 +1,12 @@
 import { renderNode } from "./index.js";
-import { findAnchor, resolveAnchor } from "../anchor.js";
+import { findAnchor } from "../anchor.js";
 import { patchProps } from "./patchProps.js";
 import { ComponentNode, ElementNode, TextNode } from "../vnode.js";
 import { ComponentInstance } from "../component.js"
 import { shallowCompareObj } from "../helpers.js";
 
 function patchElement(parentNode, nextNode, prevNode, prevChildren, index) {
-    if (prevNode instanceof ElementNode && prevNode.el && prevNode.tag === nextNode.tag) {
+    if (prevNode && prevNode.constructor === ElementNode && prevNode.el && prevNode.tag === nextNode.tag) {
         nextNode.el = prevNode.el;
         patch(nextNode, prevNode.children, nextNode.children)
         patchProps(prevNode, nextNode);
@@ -22,12 +22,12 @@ function patchElement(parentNode, nextNode, prevNode, prevChildren, index) {
         patch(nextNode, [], nextNode.children)
         patchProps(null, nextNode);
         
-        parentNode.el.insertBefore(el, resolveAnchor(findAnchor(prevChildren, Number(index)), parentNode));
+        parentNode.el.insertBefore(el, findAnchor(prevChildren, index) || parentNode.anchor || null);
     }
 }
 
 function patchText(parentNode, nextNode, prevNode, prevChildren, index) {
-    if (prevNode instanceof TextNode && prevNode.el) {
+    if (prevNode && prevNode.constructor === TextNode && prevNode.el) {
         nextNode.el = prevNode.el;
 
         if (prevNode.text !== nextNode.text) {
@@ -41,12 +41,12 @@ function patchText(parentNode, nextNode, prevNode, prevChildren, index) {
         const el = document.createTextNode(nextNode.text);
         nextNode.el = el;
 
-        parentNode.el.insertBefore(el, resolveAnchor(findAnchor(prevChildren, Number(index)), parentNode));
+        parentNode.el.insertBefore(el, findAnchor(prevChildren, index) || parentNode.anchor || null);
     }
 }
 
 function patchComponent(parentNode, nextNode, prevNode, index) {
-    const isSameComponent = prevNode instanceof ComponentNode && prevNode.renderFn === nextNode.renderFn;
+    const isSameComponent = prevNode && prevNode.constructor === ComponentNode && prevNode.renderFn === nextNode.renderFn;
 
     if (isSameComponent && prevNode.instance) {
         nextNode.instance = prevNode.instance
@@ -88,7 +88,7 @@ export function patch(parentNode, prevChildren, nextChildren) {
         const nextNode = nextChildren[index]
         const prevNode = prevChildren[index]
         
-        if (nextNode instanceof ElementNode) {
+        if (nextNode.constructor === ElementNode) {
             patchElement(
                 parentNode,
                 nextNode,
@@ -96,7 +96,7 @@ export function patch(parentNode, prevChildren, nextChildren) {
                 prevChildren,
                 index
             )
-        } else if (nextNode instanceof TextNode) {
+        } else if (nextNode.constructor === TextNode) {
             patchText(
                 parentNode,
                 nextNode,
@@ -104,7 +104,7 @@ export function patch(parentNode, prevChildren, nextChildren) {
                 prevChildren,
                 index
             )
-        } else if (nextNode instanceof ComponentNode) {
+        } else if (nextNode.constructor === ComponentNode) {
             patchComponent(
                 parentNode,
                 nextNode,
@@ -116,7 +116,8 @@ export function patch(parentNode, prevChildren, nextChildren) {
         }
     }
 
-    for (var index = nextChildren.length; index < prevChildren.length; index++) {
+    // index should inheritely be set to nextChildren.length according to the previous loop
+    for (index; index < prevChildren.length; index++) {
         const item = prevChildren[index];
 
         if (item) item.unmount()

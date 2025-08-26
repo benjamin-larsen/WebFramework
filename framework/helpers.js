@@ -1,8 +1,7 @@
 export function shallowCompareObj(objA, objB) {
-    const keysA = Object.keys(objA);
-    const keysB = Object.keys(objB);
+    const keys = Object.keys(objA);
 
-    if (keysA.length !== keysB.length) return false;
+    if (keys.length !== Object.keys(objB).length) return false;
 
     /* We only need to compare one of the objects because of the previous check
        If a key is missing from the other Object, it will inheritely be undefined, and therefore not compare to the non-undefined key.
@@ -17,8 +16,8 @@ export function shallowCompareObj(objA, objB) {
        keysB.includes(key ("b")) = false
     */
 
-    for (var i = 0; i < keysA.length; i++) {
-        const key = keysA[i];
+    for (var i = 0; i < keys.length; i++) {
+        const key = keys[i];
         if (!(key in objB)) return false;
 
         const valA = objA[key];

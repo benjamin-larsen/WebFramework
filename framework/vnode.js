@@ -11,8 +11,8 @@ export class HeadContainer {
     }
 }
 
-export function head(attributes, ...children) {
-    return new HeadContainer(attributes, children);
+export function head(renderFn) {
+    return new HeadContainer(renderFn);
 }
 
 export class BodyContainer {
@@ -26,8 +26,8 @@ export class BodyContainer {
     }
 }
 
-export function body(attributes, ...children) {
-    return new BodyContainer(attributes, children);
+export function body(renderFn) {
+    return new BodyContainer(renderFn);
 }
 
 export class ElementNode {

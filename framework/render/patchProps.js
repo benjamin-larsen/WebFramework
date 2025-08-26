@@ -118,14 +118,16 @@ export function patchProp(prevNode, nextNode, prop, value) {
 }
 
 export function patchProps(prevNode, nextNode) {
-    for (const [prop, value] of Object.entries(nextNode.properties)) {
+    for (const prop in nextNode.properties) {
+        const value = nextNode.properties[prop];
+
         if (value === null || value === undefined) continue;
 
         patchProp(prevNode, nextNode, prop, value)
     }
 
     if (prevNode) {
-        for (const prop of Object.keys(prevNode.properties)) {
+        for (const prop in prevNode.properties) {
             const nextProp = nextNode.properties[prop];
 
             if (nextProp !== null && nextProp !== undefined) continue;

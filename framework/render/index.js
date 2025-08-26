@@ -89,11 +89,19 @@ class RenderQueue {
         const items = [...this.waiting];
         this.waiting.clear();
 
+        const startTime = performance.now()
+
         for (const componentInstance of items) {
             if (!componentInstance.vnode) continue;
 
             renderNode(componentInstance.vnode);
         }
+
+        times.push({
+            type: "renderQueue",
+            time: performance.now() - startTime,
+            items
+        })
 
         if (this.waiting.size > 0) {
             this.renderId = requestAnimationFrame(this.process.bind(this));
@@ -115,12 +123,12 @@ export const effectStack = new EffectStack()
 export const depManager = new DependencyManager()
 export const renderQueue = new RenderQueue()
 
-export function renderNode(node) {
-    const startTime = performance.now()
+window.times = []
 
+export function renderNode(node) {
     if (!node.instance) return;
     
-    if (node instanceof ComponentNode) {
+    if (node.constructor === ComponentNode) {
         refreshComponentAnchor(node)
     }
 
@@ -128,6 +136,7 @@ export function renderNode(node) {
 
     const prevChildren = node.children;
 
+    const startTime_render = performance.now()
     const nextChildren = depManager.withTracking(
         node.instance,
         node.renderFn.bind(
@@ -135,8 +144,17 @@ export function renderNode(node) {
             node.properties
         )
     )
+    times.push({
+        type: "render",
+        time: performance.now() - startTime_render,
+        node
+    })
 
+    const startTime_patch = performance.now()
     patch(node, prevChildren, nextChildren);
-
-    console.log("Render Time", performance.now() - startTime, node)
+    times.push({
+        type: "patch",
+        time: performance.now() - startTime_patch,
+        node
+    })
 }
