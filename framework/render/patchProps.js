@@ -13,15 +13,14 @@ function patchClassName(prevNode, nextNode, classList) {
         computedClass = classArray.join(" ")
     }
 
-    nextNode.attributes.set("class", computedClass)
 
-    if (prevNode && prevNode.attributes.get("class") === computedClass) return;
+    if (prevNode && prevNode.properties.class === computedClass) return;
 
     nextNode.el.className = computedClass
 }
 
 function patchAttribute(prevNode, nextNode, attr, value) {
-    const hasPrevAttr = prevNode && prevNode.attributes.has(attr);
+    const hasPrevAttr = prevNode && prevNode.properties[attr];
 
     if (value === null || value === undefined) {
         if (hasPrevAttr && prevNode.el) {
@@ -31,9 +30,7 @@ function patchAttribute(prevNode, nextNode, attr, value) {
         return
     }
 
-    nextNode.attributes.set(attr, value)
-
-    if (hasPrevAttr && prevNode.attributes.get(attr) === value) return;
+    if (hasPrevAttr && prevNode.properties[attr] === value) return;
 
     nextNode.el.setAttribute(attr, value)
 }
@@ -53,14 +50,15 @@ function createInvoker(func, node) {
     return invoker;
 }
 
-function patchEvent(prevNode, nextNode, eventName, listenerFn) {
-    const hasPrevInvoker = prevNode && prevNode.eventListeners.has(eventName);
+function patchEvent(prevNode, nextNode, propName, listenerFn) {
+    const eventName = propName.substring(2)
+    const hasPrevInvoker = prevNode && prevNode.properties[propName];
 
     if (typeof listenerFn !== 'function') {
         if (hasPrevInvoker && prevNode.el) {
             prevNode.el.removeEventListener(
                 eventName,
-                prevNode.eventListeners.get(eventName)
+                prevNode.properties[propName]
             )
         }
 
@@ -68,14 +66,14 @@ function patchEvent(prevNode, nextNode, eventName, listenerFn) {
     }
 
     if (hasPrevInvoker) {
-        const invoker = prevNode.eventListeners.get(eventName);
-        nextNode.eventListeners.set(eventName, invoker)
+        const invoker = prevNode.properties[propName];
+        nextNode.properties[propName] = invoker;
         
         invoker.func = listenerFn;
         invoker.node = nextNode;
     } else {
         const invoker = createInvoker(listenerFn, nextNode);
-        nextNode.eventListeners.set(eventName, invoker)
+        nextNode.properties[propName] = invoker;
 
         nextNode.el.addEventListener(eventName, invoker)
     }
@@ -86,16 +84,14 @@ export function patchProp(prevNode, nextNode, prop, value) {
             patchEvent(
                 prevNode,
                 nextNode,
-                prop.substring(2), // Event Name
+                prop, // Prop Name
                 value // Listener Function
             )
-        } else if (prop === "ref") {
-            nextNode.refFn = value;
-            
-            if (prevNode && typeof prevNode.refFn === 'function') {
-                if (prevNode.refFn === value) return;
+        } else if (prop === "ref") {            
+            if (prevNode && typeof prevNode.properties.ref === 'function') {
+                if (prevNode.properties.ref === value) return;
 
-                prevNode.refFn(null)
+                prevNode.properties.ref(null)
             }
 
             if (typeof value === 'function') {
@@ -107,6 +103,10 @@ export function patchProp(prevNode, nextNode, prop, value) {
                 nextNode,
                 value
             )
+        } else if (prop === "value") {
+            if (!prevNode || !prevNode.el || prevNode.el.value !== value) {
+                nextNode.el.value = value;
+            }
         } else {
             patchAttribute(
                 prevNode,

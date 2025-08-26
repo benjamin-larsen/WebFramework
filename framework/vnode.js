@@ -36,10 +36,6 @@ export class ElementNode {
         this.properties = Object.assign({}, properties);
         this.children = children;
 
-        this.refFn = null;
-        this.attributes = new Map();
-        this.eventListeners = new Map();
-
         this.el = null;
     }
 
