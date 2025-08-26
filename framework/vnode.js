@@ -93,8 +93,6 @@ export class ComponentNode {
         this.anchor = null;
         this.el = null;
         this.instance = null;
-
-        this.effects = new Set();
     }
 
     unmount() {

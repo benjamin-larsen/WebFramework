@@ -1,0 +1,24 @@
+{
+  "name": "webframework",
+  "version": "0.0.1",
+  "description": "Web Framework made in Vanilla JavaScript",
+  "main": "framework/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/benjamin-larsen/WebFramework.git"
+  },
+  "author": "Benjamin Larsen",
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/benjamin-larsen/WebFramework/issues"
+  },
+  "homepage": "https://github.com/benjamin-larsen/WebFramework#readme",
+  "devDependencies": {
+    "eslint": "^9.34.0",
+    "webpack": "^5.101.3",
+    "webpack-cli": "^6.0.1"
+  }
+}

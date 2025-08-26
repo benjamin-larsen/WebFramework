@@ -71,8 +71,6 @@ class DependencyManager {
 
         try {
             return func()
-        } catch(e) {
-            throw e
         } finally {
             effectStack.pop()
         }
@@ -89,19 +87,11 @@ class RenderQueue {
         const items = [...this.waiting];
         this.waiting.clear();
 
-        const startTime = performance.now()
-
         for (const componentInstance of items) {
             if (!componentInstance.vnode) continue;
 
             renderNode(componentInstance.vnode);
         }
-
-        times.push({
-            type: "renderQueue",
-            time: performance.now() - startTime,
-            items
-        })
 
         if (this.waiting.size > 0) {
             this.renderId = requestAnimationFrame(this.process.bind(this));
@@ -123,8 +113,6 @@ export const effectStack = new EffectStack()
 export const depManager = new DependencyManager()
 export const renderQueue = new RenderQueue()
 
-window.times = []
-
 export function renderNode(node) {
     if (!node.instance) return;
     
@@ -136,7 +124,6 @@ export function renderNode(node) {
 
     const prevChildren = node.children;
 
-    const startTime_render = performance.now()
     const nextChildren = depManager.withTracking(
         node.instance,
         node.renderFn.bind(
@@ -144,17 +131,6 @@ export function renderNode(node) {
             node.properties
         )
     )
-    times.push({
-        type: "render",
-        time: performance.now() - startTime_render,
-        node
-    })
 
-    const startTime_patch = performance.now()
     patch(node, prevChildren, nextChildren);
-    times.push({
-        type: "patch",
-        time: performance.now() - startTime_patch,
-        node
-    })
 }

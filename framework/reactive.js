@@ -15,10 +15,8 @@ const reactiveHandler = {
         } else {
             return value
         }
-
-        return target[prop];
     },
-    set(target, prop, value, receiver) {
+    set(target, prop, value) {
         const shouldTrigger = target[prop] !== value;
 
         target[prop] = value;
