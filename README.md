@@ -1,3 +1,6 @@
+# License Explanation
+The License only applies to this repository, there is an [example template[(https://github.com/benjamin-larsen/WebFramework-test) which is licensed under MIT which you are free to use commercially and make private, but if you make modifcations to the core, you will have to open-source it in accordance to AGPL 3.0
+
 # How to get started?
 The first thing you need to do is to create an App Instance by importing ("App") from ("framework/index.js"), in App's constructor you can specify various "App Roots" which currently are HeadContainer (created with head()) and BodyContainer (created with body()).
 
