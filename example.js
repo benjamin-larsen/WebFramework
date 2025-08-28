@@ -34,42 +34,50 @@ function exampleComponent(props) {
         e("div", {}, t("content after component"))]
 }*/
 
-function newComponent() {
-    return [
-        v("div", "new comp")
-    ]
-}
-
-function innerInnerComponent() {
-    return [
-        v("div", someValue.value),
-        v(someBool2.value ? "div" : null, "Conditional from Component")
-    ]
-}
-
-function innerComponent() {
-    return [
-        v(innerInnerComponent)
-    ]
-}
-
-function exampleComponent(props) {
-    if (boolObj.value == false) {
-        someBool.value = true
+const newComponent = {
+    render(props) {
+        return [
+            v("div", "new comp")
+        ]
     }
+}
 
-    if (isRunning.value) {
-        //this.$forceUpdate()
-        //requestAnimationFrame(this.$forceUpdate.bind(this))
+const innerInnerComponent = {
+    render(props) {
+        return [
+            v("div", someValue.value),
+            v(someBool2.value ? "div" : null, "Conditional from Component")
+        ]
     }
+}
 
-    const arr = [
-        v("div", {}, v(innerInnerComponent))
-    ]
+const innerComponent = {
+    render(props) {
+        return [
+            v(innerInnerComponent)
+        ]
+    }
+}
 
-    console.log(arr)
+const exampleComponent = {
+    render(props) {
+        if (boolObj.value == false) {
+            someBool.value = true
+        }
 
-    return arr;
+        if (isRunning.value) {
+            //this.$forceUpdate()
+            //requestAnimationFrame(this.$forceUpdate.bind(this))
+        }
+
+        const arr = [
+            v("div", {}, v(innerInnerComponent))
+        ]
+
+        console.log(arr)
+
+        return arr;
+    }
 }
 
 window.someValue = someValue;
@@ -88,19 +96,32 @@ window.title = title
         e("div", {}, t("Hi"))
     ])
 )*/
-const app = new App(
-    head(() => [
-        v("title", title.value)
-    ]),
-    body(() => [
-        v("div", { onclick: function () { alert('test')}, class: ["test", "test2"] }, "Hi", " hah"),
-        v(exampleComponent),
-        //v(someBool.value ? innerInnerComponent : newComponent),
-        v("div", "Hi")
-        /*v(() => [
 
-        ])*/
-    ])
+const HeadRoot = {
+    render() {
+        return [
+            v("title", title.value)
+        ]
+    }
+}
+
+const BodyRoot = {
+    render() {
+        return [
+            v("div", { onclick: function () { alert('test')}, class: ["test", "test2"] }, "Hi", " hah"),
+            v(exampleComponent),
+            //v(someBool.value ? innerInnerComponent : newComponent),
+            v("div", "Hi")
+            /*v(() => [
+
+            ])*/
+        ]
+    }
+}
+
+const app = new App(
+    head(HeadRoot),
+    body(BodyRoot)
 )
 
 app.render()

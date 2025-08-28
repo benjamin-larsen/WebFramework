@@ -1,8 +1,8 @@
 import { ComponentInstance } from "./component.js";
 
 export class HeadContainer {
-    constructor(renderFn) {
-        this.renderFn = renderFn;
+    constructor(component) {
+        this.component = component;
         this.children = [];
 
         this.el = document.head;
@@ -11,13 +11,13 @@ export class HeadContainer {
     }
 }
 
-export function head(renderFn) {
-    return new HeadContainer(renderFn);
+export function head(component) {
+    return new HeadContainer(component);
 }
 
 export class BodyContainer {
-    constructor(renderFn) {
-        this.renderFn = renderFn;
+    constructor(component) {
+        this.component = component;
         this.children = [];
 
         this.el = document.body;
@@ -26,8 +26,8 @@ export class BodyContainer {
     }
 }
 
-export function body(renderFn) {
-    return new BodyContainer(renderFn);
+export function body(component) {
+    return new BodyContainer(component);
 }
 
 export class ElementNode {
@@ -83,8 +83,8 @@ export function t(text) {
 }
 
 export class ComponentNode {
-    constructor(renderFn, properties) {
-        this.renderFn = renderFn;
+    constructor(component, properties) {
+        this.component = component;
         this.properties = Object.assign({}, properties);
         this.children = [];
         this.parent = null;

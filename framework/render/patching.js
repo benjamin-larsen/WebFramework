@@ -46,7 +46,7 @@ function patchText(parentNode, nextNode, prevNode, prevChildren, index) {
 }
 
 function patchComponent(parentNode, nextNode, prevNode, index) {
-    const isSameComponent = prevNode && prevNode.constructor === ComponentNode && prevNode.renderFn === nextNode.renderFn;
+    const isSameComponent = prevNode && prevNode.constructor === ComponentNode && prevNode.component === nextNode.component;
 
     if (isSameComponent && prevNode.instance) {
         nextNode.instance = prevNode.instance
@@ -90,7 +90,7 @@ export function patch(parentNode, prevChildren, nextChildren) {
 
         if (nextNode === null || typeof nextNode !== "object") {
             if (prevNode) prevNode.unmount()
-            return;
+            continue;
         }
         
         if (nextNode.constructor === ElementNode) {

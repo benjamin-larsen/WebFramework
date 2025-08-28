@@ -126,7 +126,7 @@ export function renderNode(node) {
 
     const nextChildren = depManager.withTracking(
         node.instance,
-        node.renderFn.bind(
+        node.component.render.bind(
             node.instance,
             node.properties
         )
