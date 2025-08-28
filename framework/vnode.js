@@ -141,7 +141,7 @@ export function v(type, ...data) {
             return new ElementNode(type, properties, children)
         }
 
-        case "function": {
+        case "object": {
             return new ComponentNode(type, data[0] || {})
         }
 
