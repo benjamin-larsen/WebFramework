@@ -2,6 +2,8 @@ import { renderQueue } from "./render/index.js"
 export { head, body, e, t, c, v } from "./vnode.js"
 export { reactive } from "./reactive.js"
 
+import { BodyContainer, HeadContainer, ElementNode, ComponentNode, TextNode } from "./vnode.js"
+
 function printVNode(node, indent = "") {
     if (node instanceof BodyContainer) {
         console.log(`${indent}<body>`)
@@ -10,7 +12,7 @@ function printVNode(node, indent = "") {
     } else if (node instanceof ElementNode) {
         console.log(`${indent}<${node.tag}>`)
     } else if (node instanceof ComponentNode) {
-        console.log(`${indent}<Component ${node.renderFn.name}>`)
+        console.log(`${indent}<Component`, node.component, ">")
     } else if (node instanceof TextNode) {
         console.log(`${indent}#text ${node.text}`)
     } else {
