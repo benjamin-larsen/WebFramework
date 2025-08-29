@@ -110,7 +110,12 @@ const BodyRoot = {
             v("div", { onclick: function () { alert('test')}, class: ["test", "test2"] }, "Hi", " hah"),
             v("div", v(innerInnerComponent, { time: Date.now() })),
             //v(someBool.value ? innerInnerComponent : newComponent),
-            v("div", `root: ${someValue2.value}`)
+            v("div", `root: ${someValue2.value}`),
+            v("Lazy", { loadFunc: () => {
+                return new Promise((resolve) => {
+                    setTimeout(resolve.bind(null, innerInnerComponent), 1000)
+                })
+            } })
             /*v(() => [
 
             ])*/

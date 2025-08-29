@@ -1,4 +1,5 @@
 import { ComponentInstance } from "./component.js";
+import standardComponents from "./standardComponents/index.js";
 
 export class HeadContainer {
     constructor(component) {
@@ -119,6 +120,10 @@ export class ComponentNode {
 
 // Create Component Virtual Node
 export function c(component, properties) {
+    if (typeof component === "string" && standardComponents[component]) {
+        return new ComponentNode(standardComponents[component], properties)
+    }
+
     return new ComponentNode(component, properties)
 }
 
@@ -128,6 +133,10 @@ export function c(component, properties) {
 export function v(type, ...data) {
     switch (typeof type) {
         case "string": {
+            if (standardComponents[type]) {
+                return new ComponentNode(standardComponents[type], data[0] || {})
+            }
+
             let children = [];
             let properties = {};
 

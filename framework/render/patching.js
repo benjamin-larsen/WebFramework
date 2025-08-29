@@ -82,12 +82,14 @@ function patchComponent(parentNode, nextNode, prevNode, index, level) {
         renderNode(nextNode, true)
 
         if (isSameComponent && typeof nextNode.component.onupdated === "function") {
-            nextNode.component.onupdated.apply(
-                nextNode.instance
+            nextNode.component.onupdated.call(
+                nextNode.instance,
+                nextNode.properties
             )
         } else if (!isSameComponent && typeof nextNode.component.onmounted === "function") {
-            nextNode.component.onmounted.apply(
-                nextNode.instance
+            nextNode.component.onmounted.call(
+                nextNode.instance,
+                nextNode.properties
             )
         }
     }

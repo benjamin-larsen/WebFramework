@@ -7,9 +7,18 @@ export class ComponentInstance {
         this.level = level;
         this.dirty = false;
 
+        this.data = {};
+
         this.effects = new Set();
         this.cachedFunctions = new Map();
         this.cacheHistory = [];
+
+        if (typeof this.vnode.component.instanceSetup === "function") {
+            this.vnode.component.instanceSetup.call(
+                this,
+                this.vnode.properties
+            )
+        }
     }
 
     getFn(key, func, force = false) {
