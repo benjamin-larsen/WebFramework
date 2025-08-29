@@ -5,8 +5,8 @@ export default {
     instanceSetup({ loadFunc }) {
         this.data.component = reactive({ value: null })
 
-        loadFunc().then(comp => {
-            this.data.component.value = comp
+        loadFunc().then(module => {
+            this.data.component.value = module.default
         })
     },
     render(props) {
