@@ -109,7 +109,7 @@ export class ComponentNode {
         this.parent = null;
         this.children = null;
 
-        if (isSameComponent && typeof this.component.onupdated === "function") {
+        if (typeof this.component.onupdated === "function") {
             this.component.onupdated.apply(
                 this.instance
             )
