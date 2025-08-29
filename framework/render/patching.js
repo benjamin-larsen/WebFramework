@@ -5,10 +5,10 @@ import { ComponentNode, ElementNode, TextNode } from "../vnode.js";
 import { ComponentInstance } from "../component.js"
 import { shallowCompareObj } from "../helpers.js";
 
-function patchElement(parentNode, nextNode, prevNode, prevChildren, index) {
+function patchElement(parentNode, nextNode, prevNode, prevChildren, index, level) {
     if (prevNode && prevNode.constructor === ElementNode && prevNode.el && prevNode.tag === nextNode.tag) {
         nextNode.el = prevNode.el;
-        patch(nextNode, prevNode.children, nextNode.children)
+        patch(nextNode, prevNode.children, nextNode.children, level)
         patchProps(prevNode, nextNode);
     } else {
         if (prevNode) {
@@ -19,7 +19,7 @@ function patchElement(parentNode, nextNode, prevNode, prevChildren, index) {
         const el = document.createElement(nextNode.tag);
         nextNode.el = el;
 
-        patch(nextNode, [], nextNode.children)
+        patch(nextNode, [], nextNode.children, level)
         patchProps(null, nextNode);
         
         parentNode.el.insertBefore(el, findAnchor(prevChildren, index) || parentNode.anchor || null);
@@ -45,14 +45,14 @@ function patchText(parentNode, nextNode, prevNode, prevChildren, index) {
     }
 }
 
-function patchComponent(parentNode, nextNode, prevNode, index) {
+function patchComponent(parentNode, nextNode, prevNode, index, level) {
     const isSameComponent = prevNode && prevNode.constructor === ComponentNode && prevNode.component === nextNode.component;
 
     if (isSameComponent && prevNode.instance) {
         nextNode.instance = prevNode.instance
         nextNode.instance.vnode = nextNode
     } else {
-        nextNode.instance = new ComponentInstance(nextNode)
+        nextNode.instance = new ComponentInstance(nextNode, level + 1)
     }
 
     if (
@@ -79,11 +79,21 @@ function patchComponent(parentNode, nextNode, prevNode, index) {
         nextNode.index = index;
         nextNode.parent = parentNode;
         nextNode.el = parentNode.el;
-        renderNode(nextNode)
+        renderNode(nextNode, true)
+
+        if (isSameComponent && typeof nextNode.component.onupdated === "function") {
+            nextNode.component.onupdated.apply(
+                nextNode.instance
+            )
+        } else if (!isSameComponent && typeof nextNode.component.onmounted === "function") {
+            nextNode.component.onmounted.apply(
+                nextNode.instance
+            )
+        }
     }
 }
 
-export function patch(parentNode, prevChildren, nextChildren) {
+export function patch(parentNode, prevChildren, nextChildren, level) {
     for (var index = 0; index < nextChildren.length; index++) {
         const nextNode = nextChildren[index]
         const prevNode = prevChildren[index]
@@ -99,7 +109,8 @@ export function patch(parentNode, prevChildren, nextChildren) {
                 nextNode,
                 prevNode,
                 prevChildren,
-                index
+                index,
+                level
             )
         } else if (nextNode.constructor === TextNode) {
             patchText(
@@ -114,7 +125,8 @@ export function patch(parentNode, prevChildren, nextChildren) {
                 parentNode,
                 nextNode,
                 prevNode,
-                index
+                index,
+                level
             )
         }
     }

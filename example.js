@@ -7,6 +7,7 @@ import {
 } from './framework/index.js'
 
 const someValue = reactive({ value: "hi" })
+const someValue2 = reactive({ value: "test" }) 
 const boolObj = { value: false }
 const someBool = reactive(boolObj)
 const someBool2 = reactive({ value: false })
@@ -43,9 +44,10 @@ const newComponent = {
 }
 
 const innerInnerComponent = {
+    name: "innerInnerComponent",
     render(props) {
         return [
-            v("div", someValue.value),
+            v("div", `innerInnerComponent: ${someValue.value}`),
             v(someBool2.value ? "div" : null, "Conditional from Component")
         ]
     }
@@ -61,10 +63,6 @@ const innerComponent = {
 
 const exampleComponent = {
     render(props) {
-        if (boolObj.value == false) {
-            someBool.value = true
-        }
-
         if (isRunning.value) {
             //this.$forceUpdate()
             //requestAnimationFrame(this.$forceUpdate.bind(this))
@@ -81,6 +79,7 @@ const exampleComponent = {
 }
 
 window.someValue = someValue;
+window.someValue2 = someValue2;
 window.someBool = someBool;
 window.someBool2 = someBool2
 window.title = title
@@ -109,9 +108,9 @@ const BodyRoot = {
     render() {
         return [
             v("div", { onclick: function () { alert('test')}, class: ["test", "test2"] }, "Hi", " hah"),
-            v(exampleComponent),
+            v("div", v(innerInnerComponent, { time: Date.now() })),
             //v(someBool.value ? innerInnerComponent : newComponent),
-            v("div", "Hi")
+            v("div", `root: ${someValue2.value}`)
             /*v(() => [
 
             ])*/

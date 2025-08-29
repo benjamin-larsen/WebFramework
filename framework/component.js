@@ -2,8 +2,10 @@ import { renderQueue, depManager } from "./render/index.js";
 import { FUNCTION_CACHE_LIMIT } from "./constants.js";
 
 export class ComponentInstance {
-    constructor(vnode) {
+    constructor(vnode, level) {
         this.vnode = vnode;
+        this.level = level;
+        this.dirty = false;
 
         this.effects = new Set();
         this.cachedFunctions = new Map();

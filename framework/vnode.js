@@ -7,7 +7,7 @@ export class HeadContainer {
 
         this.el = document.head;
 
-        this.instance = new ComponentInstance(this);
+        this.instance = new ComponentInstance(this, 0);
     }
 }
 
@@ -22,7 +22,7 @@ export class BodyContainer {
 
         this.el = document.body;
 
-        this.instance = new ComponentInstance(this);
+        this.instance = new ComponentInstance(this, 0);
     }
 }
 
@@ -108,6 +108,12 @@ export class ComponentNode {
         // Prevent Memory Leak
         this.parent = null;
         this.children = null;
+
+        if (isSameComponent && typeof this.component.onupdated === "function") {
+            this.component.onupdated.apply(
+                this.instance
+            )
+        }
     }
 }
 
@@ -142,6 +148,8 @@ export function v(type, ...data) {
         }
 
         case "object": {
+            if (type === null) return null;
+
             return new ComponentNode(type, data[0] || {})
         }
 

@@ -84,7 +84,7 @@ class RenderQueue {
     }
 
     process() {
-        const items = [...this.waiting];
+        const items = [...this.waiting].filter(inst => inst.vnode).sort((a, b) => a.level - b.level);
         this.waiting.clear();
 
         for (const componentInstance of items) {
@@ -101,6 +101,8 @@ class RenderQueue {
     }
 
     queue(component) {
+        component.dirty = true;
+
         this.waiting.add(component)
 
         if (!this.renderId) {
@@ -113,13 +115,17 @@ export const effectStack = new EffectStack()
 export const depManager = new DependencyManager()
 export const renderQueue = new RenderQueue()
 
-export function renderNode(node) {
+export function renderNode(node, force) {
     if (!node.instance) return;
+    if (!force && !node.instance.dirty) return;
+
+    const startTime = performance.now()
     
     if (node.constructor === ComponentNode) {
         refreshComponentAnchor(node)
     }
 
+    node.instance.dirty = false;
     node.instance.cleanEffects()
 
     const prevChildren = node.children;
@@ -132,5 +138,7 @@ export function renderNode(node) {
         )
     )
 
-    patch(node, prevChildren, nextChildren);
+    patch(node, prevChildren, nextChildren, node.instance.level);
+
+    console.log(performance.now() - startTime, node)
 }
