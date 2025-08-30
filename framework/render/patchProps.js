@@ -1,3 +1,5 @@
+import { RESERVED_PROPS } from "../constants.js";
+
 function patchClassName(prevNode, nextNode, classList) {
     let computedClass = classList || "";
 
@@ -81,6 +83,8 @@ function patchEvent(prevNode, nextNode, propName, listenerFn) {
 }
 
 export function patchProp(prevNode, nextNode, prop, value) {
+    if (RESERVED_PROPS.has(prop)) return;
+
     if (prop.startsWith("on")) {
             patchEvent(
                 prevNode,

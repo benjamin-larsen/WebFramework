@@ -95,7 +95,55 @@ function patchComponent(parentNode, nextNode, prevNode, index, level) {
     }
 }
 
+// Has responsibility for moving/removing keyed children.
+// Handle case when nextChildren is bigger than prevChildren (perhaps fill with null)
+function patchKeyed(prevChildren, nextChildren) {
+    const tobeRemoved = [];
+    const tobeMoved = [];
+
+    const nextKeyed = new Map()
+
+    for (var index = 0; index < nextChildren.length; index++) {
+        const nextNode = nextChildren[index];
+        if (!nextNode || (nextNode.constructor !== ElementNode && nextNode.constructor !== ComponentNode)) continue;
+        const key = typeof nextNode.properties.key === "string" ? nextNode.properties.key : null;
+
+        if (key) {
+            if (nextKeyed.has(key)) throw Error(`Duplicate key: ${key}`)
+            nextKeyed.set(key, index)
+        }
+    }
+
+    for (var index = 0; index < prevChildren.length; index++) {
+        const prevNode = prevChildren[index];
+        if (!prevNode || (prevNode.constructor !== ElementNode && prevNode.constructor !== ComponentNode)) continue;
+        const key = typeof prevNode.properties.key === "string" ? prevNode.properties.key : null;
+
+        if (key) {
+            // check else if not same type
+            if (!nextKeyed.has(key)) {
+                tobeRemoved.push(index)
+            } else if (nextKeyed.get(key) !== index) {
+                tobeMoved.push({key, index})
+            }
+        }
+    }
+
+    // Remove Old Keyed Children
+    for (var index = (tobeRemoved.length - 1); index >= 0; index--) {
+        const nodeIndex = tobeRemoved[index]
+        const node = prevChildren[nodeIndex]
+        node.unmount()
+
+        prevChildren.splice(nodeIndex, 1)
+    }
+
+    // Move Old Keyed Children to New Index
+}
+
 export function patch(parentNode, prevChildren, nextChildren, level) {
+    patchKeyed(prevChildren, nextChildren)
+
     for (var index = 0; index < nextChildren.length; index++) {
         const nextNode = nextChildren[index]
         const prevNode = prevChildren[index]
@@ -134,7 +182,7 @@ export function patch(parentNode, prevChildren, nextChildren, level) {
     }
 
     // index should inheritely be set to nextChildren.length according to the previous loop
-    for (index; index < prevChildren.length; index++) {
+    for (var index = nextChildren.length; index < prevChildren.length; index++) {
         const item = prevChildren[index];
 
         if (item) item.unmount()

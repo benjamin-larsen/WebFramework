@@ -43,13 +43,26 @@ const newComponent = {
     }
 }
 
+const arrayReact = reactive([
+])
+
+for (var i = 0; i < 10000; i++) {
+    
+        arrayReact.push({
+            key: `${i}`,
+            text: `${i}st number`
+        })
+    
+}
+
+window.arrayReact = arrayReact;
+
 const innerInnerComponent = {
     name: "innerInnerComponent",
     render(props) {
-        return [
-            v("div", `innerInnerComponent: ${someValue.value}`),
-            v(someBool2.value ? "div" : null, "Conditional from Component")
-        ]
+        return arrayReact.map(
+            item => v("div", { key: item.key }, item.text)
+        )
     }
 }
 
@@ -111,11 +124,11 @@ const BodyRoot = {
             v("div", v(innerInnerComponent, { time: Date.now() })),
             //v(someBool.value ? innerInnerComponent : newComponent),
             v("div", `root: ${someValue2.value}`),
-            v("Lazy", { loadFunc: () => {
+            someBool.value ? v("Lazy", { loadFunc: () => {
                 return new Promise((resolve) => {
-                    setTimeout(resolve.bind(null, innerInnerComponent), 1000)
+                    setTimeout(resolve.bind(null, {default:innerInnerComponent}), 1000)
                 })
-            } })
+            } }) : null
             /*v(() => [
 
             ])*/
