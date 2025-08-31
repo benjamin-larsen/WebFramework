@@ -5,6 +5,32 @@ import { ComponentNode, ElementNode, TextNode } from "../vnode.js";
 import { ComponentInstance } from "../component.js"
 import { shallowCompareObj } from "../helpers.js";
 
+function isSameNode(prev, next) {
+    if (!prev) return false;
+
+    if (next.properties.key !== prev.properties.key) return false;
+
+    if (next.constructor === ElementNode) {
+        if (prev.constructor !== ElementNode) return false;
+        if (next.tag !== prev.tag) return false;
+    } else if (next.constructor === ComponentNode) {
+        if (prev.constructor !== ComponentNode) return false;
+        if (next.component !== prev.component) return false;
+    } else {
+        return false;
+    }
+
+    return true;
+}
+
+function seekSameNode(node, index, prevChildren) {
+    for (var i = index; i < prevChildren.length; i++) {
+        if (isSameNode(prevChildren[i], node)) return i;
+    }
+
+    return null;
+}
+
 function patchElement(parentNode, nextNode, prevNode, prevChildren, index, level) {
     if (prevNode && prevNode.constructor === ElementNode && prevNode.el && prevNode.tag === nextNode.tag) {
         nextNode.el = prevNode.el;
@@ -142,7 +168,7 @@ function patchKeyed(prevChildren, nextChildren) {
 }
 
 export function patch(parentNode, prevChildren, nextChildren, level) {
-    patchKeyed(prevChildren, nextChildren)
+    //patchKeyed(prevChildren, nextChildren)
 
     for (var index = 0; index < nextChildren.length; index++) {
         const nextNode = nextChildren[index]

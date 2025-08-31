@@ -35,6 +35,11 @@ export class ElementNode {
     constructor(tag, properties, children) {
         this.tag = tag;
         this.properties = Object.assign({}, properties);
+
+        if (typeof this.properties.key !== "string") {
+            this.properties.key = null;
+        }
+
         this.children = children;
 
         this.el = null;
@@ -87,6 +92,11 @@ export class ComponentNode {
     constructor(component, properties) {
         this.component = component;
         this.properties = Object.assign({}, properties);
+
+        if (typeof this.properties.key !== "string") {
+            this.properties.key = null;
+        }
+
         this.children = [];
         this.parent = null;
 
