@@ -2,7 +2,7 @@ import { reactive } from "../reactive.js"
 import { c } from "../vnode.js"
 
 export default {
-    instanceSetup({ loadFunc }) {
+    onCreated({ loadFunc }) {
         this.data.component = reactive({ value: null })
 
         loadFunc().then(module => {
