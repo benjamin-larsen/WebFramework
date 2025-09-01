@@ -107,8 +107,6 @@ export class ComponentNode {
     }
 
     unmount() {
-        this.instance.destroy();
-        this.instance = null;
         this.anchor = null;
 
         for (const child of this.children) {
@@ -120,11 +118,11 @@ export class ComponentNode {
         this.parent = null;
         this.children = null;
 
-        if (typeof this.component.onupdated === "function") {
-            this.component.onupdated.apply(
-                this.instance
-            )
-        }
+        // Call unmount hook before instance is destroyed.
+        this.instance.callHook("onDestroy")
+
+        this.instance.destroy();
+        this.instance = null;
     }
 }
 

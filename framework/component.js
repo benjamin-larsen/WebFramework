@@ -1,11 +1,11 @@
 import { renderQueue, depManager } from "./render/index.js";
-import { FUNCTION_CACHE_LIMIT } from "./constants.js";
+import { FUNCTION_CACHE_LIMIT, INSTANCE_STATES } from "./constants.js";
 
 export class ComponentInstance {
     constructor(vnode, level) {
         this.vnode = vnode;
         this.level = level;
-        this.dirty = false;
+        this.status = INSTANCE_STATES.BEFORE_MOUNT;
 
         this.data = {};
 
@@ -13,10 +13,23 @@ export class ComponentInstance {
         this.cachedFunctions = new Map();
         this.cacheHistory = [];
 
-        if (typeof this.vnode.component.instanceSetup === "function") {
-            this.vnode.component.instanceSetup.call(
+        this.callHook("onCreated", this.vnode.properties)
+    }
+
+    setStatus(status) {
+        if (status === INSTANCE_STATES.UNSYNCED && this.status === INSTANCE_STATES.BEFORE_MOUNT) return;
+        if (status === INSTANCE_STATES.BEFORE_MOUNT) return;
+
+        this.status = status;
+    }
+
+    callHook(hookName, ...args) {
+        if (!this.vnode) return;
+
+        if (typeof this.vnode.component[hookName] === 'function') {
+            this.vnode.component[hookName].apply(
                 this,
-                this.vnode.properties
+                args
             )
         }
     }

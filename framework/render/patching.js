@@ -177,18 +177,6 @@ function patchComponent(seeker, nextNode, index, level) {
         nextNode.parent = seeker.parentNode;
         nextNode.el = seeker.parentNode.el;
         renderNode(nextNode, true)
-
-        if (prevNode && typeof nextNode.component.onupdated === "function") {
-            nextNode.component.onupdated.call(
-                nextNode.instance,
-                nextNode.properties
-            )
-        } else if (!prevNode && typeof nextNode.component.onmounted === "function") {
-            nextNode.component.onmounted.call(
-                nextNode.instance,
-                nextNode.properties
-            )
-        }
     }
 }
 
