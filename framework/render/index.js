@@ -1,6 +1,7 @@
 import { ComponentNode } from "../vnode.js";
 import { refreshComponentAnchor } from "../anchor.js";
 import { patch } from "./patching.js";
+import { INSTANCE_STATES } from "../constants.js";
 
 class EffectStack {
     constructor() {
@@ -101,7 +102,7 @@ class RenderQueue {
     }
 
     queue(component) {
-        component.dirty = true;
+        component.setStatus(INSTANCE_STATES.UNSYNCED);
 
         this.waiting.add(component)
 
@@ -117,7 +118,7 @@ export const renderQueue = new RenderQueue()
 
 export function renderNode(node, force) {
     if (!node.instance) return;
-    if (!force && !node.instance.dirty) return;
+    if (!force && node.instance.status === INSTANCE_STATES.SYNCED) return;
 
     const startTime = performance.now()
     
@@ -125,7 +126,6 @@ export function renderNode(node, force) {
         refreshComponentAnchor(node)
     }
 
-    node.instance.dirty = false;
     node.instance.cleanEffects()
 
     const prevChildren = node.children;
@@ -139,6 +139,9 @@ export function renderNode(node, force) {
     )
 
     patch(node, prevChildren, nextChildren, node.instance.level);
+
+    node.instance.callHook(node.instance.status === INSTANCE_STATES.BEFORE_MOUNT ? "onMounted" : "onUpdated", node.properties || {})
+    node.instance.setStatus(INSTANCE_STATES.SYNCED)
 
     console.log(performance.now() - startTime, node)
 }
