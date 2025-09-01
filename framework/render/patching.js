@@ -8,7 +8,10 @@ import { shallowCompareObj } from "../helpers.js";
 function isSameNode(prev, next) {
     if (!prev) return false;
 
-    if (next.properties.key !== prev.properties.key) return false;
+    const nextKey = next.properties ? next.properties.key : null;
+    const prevKey = prev.properties ? prev.properties.key : null;
+
+    if (prevKey !== nextKey) return false;
 
     if (next.constructor === ElementNode) {
         if (prev.constructor !== ElementNode) return false;
@@ -16,6 +19,8 @@ function isSameNode(prev, next) {
     } else if (next.constructor === ComponentNode) {
         if (prev.constructor !== ComponentNode) return false;
         if (next.component !== prev.component) return false;
+    } else if (next.constructor === TextNode) {
+        if (prev.constructor !== TextNode) return false;
     } else {
         return false;
     }
@@ -23,67 +28,135 @@ function isSameNode(prev, next) {
     return true;
 }
 
-function seekSameNode(node, index, prevChildren) {
-    for (var i = index; i < prevChildren.length; i++) {
-        if (isSameNode(prevChildren[i], node)) return i;
-    }
-
-    return null;
+const NO_SEEK = {
+    shouldMove: true,
+    prevNode: null
 }
 
-function patchElement(parentNode, nextNode, prevNode, prevChildren, index, level) {
-    if (prevNode && prevNode.constructor === ElementNode && prevNode.el && prevNode.tag === nextNode.tag) {
+class NodeSeeker {
+    constructor(parentNode, children) {
+        this.parentNode = parentNode;
+        this.children = children;
+        this.firstNode = null;
+        this.firstIndex = null;
+        this.firstAnchor = null;
+
+        this.seekFirstNode(0);
+    }
+
+    seekFirstNode(seekStart = 0) {
+        for (var i = seekStart; i < this.children.length; i++) {
+            if (this.children[i]) {
+                this.firstNode = this.children[i];
+                this.firstIndex = i;
+                this.firstAnchor = findAnchor(this.children, i - 1) || this.parentNode.anchor || null;
+
+                return;
+            }
+        }
+
+        this.firstNode = null;
+        this.firstIndex = null;
+        this.firstAnchor = this.parentNode.anchor || null;
+    }
+
+    seekNode(nextNode) {
+        if (this.firstIndex === null) return NO_SEEK;
+
+        for (var i = this.firstIndex; i < this.children.length; i++) {
+            const prevNode = this.children[i]
+
+            if (isSameNode(prevNode, nextNode)) {
+                this.children[i] = null;
+                const isFirst = (i === this.firstIndex);
+
+                if (isFirst) {
+                    this.seekFirstNode(this.firstIndex)
+                }
+
+                return {
+                    shouldMove: !isFirst,
+                    prevNode
+                };
+            }
+        }
+
+        return NO_SEEK;
+    }
+}
+
+function patchElement(seeker, nextNode, level) {
+    const { shouldMove, prevNode } = seeker.seekNode(nextNode);
+
+    if (prevNode) {
         nextNode.el = prevNode.el;
+
+        if (shouldMove) {
+            seeker.parentNode.el.insertBefore(nextNode.el, seeker.firstAnchor);
+        }
+
         patch(nextNode, prevNode.children, nextNode.children, level)
         patchProps(prevNode, nextNode);
     } else {
-        if (prevNode) {
-            prevNode.unmount()
-            prevNode = null
-        }
-
         const el = document.createElement(nextNode.tag);
         nextNode.el = el;
 
         patch(nextNode, [], nextNode.children, level)
         patchProps(null, nextNode);
         
-        parentNode.el.insertBefore(el, findAnchor(prevChildren, index) || parentNode.anchor || null);
+        seeker.parentNode.el.insertBefore(el, seeker.firstAnchor);
     }
 }
 
-function patchText(parentNode, nextNode, prevNode, prevChildren, index) {
-    if (prevNode && prevNode.constructor === TextNode && prevNode.el) {
+function patchText(seeker, nextNode, index) {
+    const { shouldMove, prevNode } = seeker.seekNode(nextNode);
+
+    if (prevNode) {
         nextNode.el = prevNode.el;
+
+        if (shouldMove) {
+            seeker.parentNode.el.insertBefore(nextNode.el, seeker.firstAnchor);
+        }
 
         if (prevNode.text !== nextNode.text) {
             nextNode.el.nodeValue = nextNode.text
         }
     } else {
-        if (prevNode) {
-            prevNode.unmount()
-        }
-
         const el = document.createTextNode(nextNode.text);
         nextNode.el = el;
 
-        parentNode.el.insertBefore(el, findAnchor(prevChildren, index) || parentNode.anchor || null);
+        seeker.parentNode.el.insertBefore(el, seeker.firstAnchor);
     }
 }
 
-function patchComponent(parentNode, nextNode, prevNode, index, level) {
-    const isSameComponent = prevNode && prevNode.constructor === ComponentNode && prevNode.component === nextNode.component;
+function moveComponent(node, anchor) {
+    for (const child of node.children) {
+        if (child === null) continue;
 
-    if (isSameComponent && prevNode.instance) {
+        if (child.constructor === ElementNode || child.constructor === TextNode) {
+            node.el.insertBefore(child.el, anchor);
+        } else if (child.constructor === ComponentNode) {
+            moveComponent(child, anchor)
+        }
+    }
+}
+
+function patchComponent(seeker, nextNode, index, level) {
+    const { shouldMove, prevNode } = seeker.seekNode(nextNode);
+
+    if (prevNode) {
         nextNode.instance = prevNode.instance
         nextNode.instance.vnode = nextNode
+
+        if (shouldMove) {
+            moveComponent(prevNode, seeker.firstAnchor)
+        }
     } else {
         nextNode.instance = new ComponentInstance(nextNode, level + 1)
     }
 
     if (
-        isSameComponent
-        && prevNode.el &&
+        prevNode &&
         shallowCompareObj(
             prevNode.properties,
             nextNode.properties
@@ -92,27 +165,25 @@ function patchComponent(parentNode, nextNode, prevNode, index, level) {
         nextNode.el = prevNode.el;
         nextNode.children = prevNode.children;
         nextNode.index = index;
-        nextNode.parent = parentNode;
+        nextNode.parent = seeker.parentNode;
     } else {
 
         // Set children as it's used for patching in rendering
-        if (isSameComponent) {
+        if (prevNode) {
             nextNode.children = prevNode.children;
-        } else if (prevNode) {
-            prevNode.unmount()
         }
 
         nextNode.index = index;
-        nextNode.parent = parentNode;
-        nextNode.el = parentNode.el;
+        nextNode.parent = seeker.parentNode;
+        nextNode.el = seeker.parentNode.el;
         renderNode(nextNode, true)
 
-        if (isSameComponent && typeof nextNode.component.onupdated === "function") {
+        if (prevNode && typeof nextNode.component.onupdated === "function") {
             nextNode.component.onupdated.call(
                 nextNode.instance,
                 nextNode.properties
             )
-        } else if (!isSameComponent && typeof nextNode.component.onmounted === "function") {
+        } else if (!prevNode && typeof nextNode.component.onmounted === "function") {
             nextNode.component.onmounted.call(
                 nextNode.instance,
                 nextNode.properties
@@ -121,97 +192,42 @@ function patchComponent(parentNode, nextNode, prevNode, index, level) {
     }
 }
 
-// Has responsibility for moving/removing keyed children.
-// Handle case when nextChildren is bigger than prevChildren (perhaps fill with null)
-function patchKeyed(prevChildren, nextChildren) {
-    const tobeRemoved = [];
-    const tobeMoved = [];
-
-    const nextKeyed = new Map()
-
-    for (var index = 0; index < nextChildren.length; index++) {
-        const nextNode = nextChildren[index];
-        if (!nextNode || (nextNode.constructor !== ElementNode && nextNode.constructor !== ComponentNode)) continue;
-        const key = typeof nextNode.properties.key === "string" ? nextNode.properties.key : null;
-
-        if (key) {
-            if (nextKeyed.has(key)) throw Error(`Duplicate key: ${key}`)
-            nextKeyed.set(key, index)
-        }
-    }
-
-    for (var index = 0; index < prevChildren.length; index++) {
-        const prevNode = prevChildren[index];
-        if (!prevNode || (prevNode.constructor !== ElementNode && prevNode.constructor !== ComponentNode)) continue;
-        const key = typeof prevNode.properties.key === "string" ? prevNode.properties.key : null;
-
-        if (key) {
-            // check else if not same type
-            if (!nextKeyed.has(key)) {
-                tobeRemoved.push(index)
-            } else if (nextKeyed.get(key) !== index) {
-                tobeMoved.push({key, index})
-            }
-        }
-    }
-
-    // Remove Old Keyed Children
-    for (var index = (tobeRemoved.length - 1); index >= 0; index--) {
-        const nodeIndex = tobeRemoved[index]
-        const node = prevChildren[nodeIndex]
-        node.unmount()
-
-        prevChildren.splice(nodeIndex, 1)
-    }
-
-    // Move Old Keyed Children to New Index
-}
-
 export function patch(parentNode, prevChildren, nextChildren, level) {
-    //patchKeyed(prevChildren, nextChildren)
+    const seeker = new NodeSeeker(parentNode, prevChildren);
 
     for (var index = 0; index < nextChildren.length; index++) {
         const nextNode = nextChildren[index]
-        const prevNode = prevChildren[index]
-
-        if (nextNode === null || typeof nextNode !== "object") {
-            if (prevNode) prevNode.unmount()
-            continue;
-        }
+        
+        if (nextNode === null) continue;
         
         if (nextNode.constructor === ElementNode) {
             patchElement(
-                parentNode,
+                seeker,
                 nextNode,
-                prevNode,
-                prevChildren,
-                index,
                 level
             )
         } else if (nextNode.constructor === TextNode) {
             patchText(
-                parentNode,
+                seeker,
                 nextNode,
-                prevNode,
-                prevChildren,
                 index
             )
         } else if (nextNode.constructor === ComponentNode) {
             patchComponent(
-                parentNode,
+                seeker,
                 nextNode,
-                prevNode,
                 index,
                 level
             )
         }
     }
 
-    // index should inheritely be set to nextChildren.length according to the previous loop
-    for (var index = nextChildren.length; index < prevChildren.length; index++) {
-        const item = prevChildren[index];
+    if (seeker.firstIndex) {
+        for (var index = seeker.firstIndex; index < seeker.children.length; index++) {
+            const item = seeker.children[index];
 
-        if (item) item.unmount()
+            if (item) item.unmount()
+        }
     }
 
     parentNode.children = nextChildren;

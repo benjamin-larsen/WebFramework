@@ -60,9 +60,9 @@ window.arrayReact = arrayReact;
 const innerInnerComponent = {
     name: "innerInnerComponent",
     render(props) {
-        return arrayReact.map(
+        return [...arrayReact.map(
             item => v("div", { key: item.key }, item.text)
-        )
+        ), v(newComponent)]
     }
 }
 
