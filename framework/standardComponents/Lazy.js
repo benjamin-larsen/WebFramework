@@ -1,14 +1,15 @@
-import { reactive } from "../reactive.js"
+import { ref } from "../reactive.js"
 import { c } from "../vnode.js"
 
 export default {
     onCreated({ loadFunc }) {
-        this.data.component = reactive({ value: null })
+        this.data.component = ref(null)
 
         loadFunc().then(module => {
             this.data.component.value = module.default
         })
     },
+
     render(props) {
         const childProps = { ...props }
         delete childProps.loadFunc;
