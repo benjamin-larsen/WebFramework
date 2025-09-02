@@ -1,6 +1,6 @@
 import { renderQueue } from "./render/index.js"
 export { head, body, e, t, c, v } from "./vnode.js"
-export { reactive } from "./reactive.js"
+export { reactive, ref } from "./reactive.js"
 
 import { BodyContainer, HeadContainer, ElementNode, ComponentNode, TextNode } from "./vnode.js"
 

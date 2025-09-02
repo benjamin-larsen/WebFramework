@@ -1,7 +1,14 @@
 import { effectStack, depManager } from "./render/index.js"; 
+import { REACTIVE_FLAGS } from "./constants.js";
+
+const reactiveMap = new WeakMap()
 
 const reactiveHandler = {
     get(target, prop, receiver) {
+        if (prop === REACTIVE_FLAGS) {
+            return true;
+        }
+
         const currentEffect = effectStack.getActiveEffect();
 
         if (currentEffect) {
@@ -10,7 +17,7 @@ const reactiveHandler = {
 
         const value = target[prop];
 
-        if (false && value !== null && typeof value === 'object') {
+        if (value !== null && typeof value === 'object' && !value[REACTIVE_FLAGS.IS_REF]) {
             return reactive(value)
         } else {
             return value
@@ -47,5 +54,54 @@ const reactiveHandler = {
 }
 
 export function reactive(target) {
-    return new Proxy(target, reactiveHandler);
+    if (target[REACTIVE_FLAGS]) return target;
+    if (reactiveMap.has(target)) return reactiveMap.get(target);
+    const proxy = new Proxy(target, reactiveHandler);
+
+    reactiveMap.set(target, proxy)
+
+    return proxy;
+}
+
+class ReactiveRef {
+    constructor(initValue) {
+        this[REACTIVE_FLAGS.REF_VALUE] = initValue;
+        this[REACTIVE_FLAGS.IS_REF] = true;
+    }
+
+    get value() {
+        const currentEffect = effectStack.getActiveEffect();
+
+        if (currentEffect) {
+            currentEffect("get", {
+                target: this,
+                prop: "value"
+            })
+        }
+
+        const value = this[REACTIVE_FLAGS.REF_VALUE];
+
+        if (value !== null && typeof value === 'object' && !value[REACTIVE_FLAGS.IS_REF]) {
+            return reactive(value)
+        } else {
+            return value
+        }
+    }
+
+    set value(newValue) {
+        const shouldTrigger = this[REACTIVE_FLAGS.REF_VALUE] !== newValue;
+
+        this[REACTIVE_FLAGS.REF_VALUE] = newValue;
+
+        if (shouldTrigger) {
+            depManager.trigger(this)
+        }
+    }
+}
+
+export function ref(initValue) {
+    if (initValue !== null && typeof initValue === 'object' && initValue[REACTIVE_FLAGS.IS_REF]) {
+        return initValue;
+    }
+    return new ReactiveRef(initValue)
 }

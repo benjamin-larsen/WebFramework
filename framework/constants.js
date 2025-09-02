@@ -6,3 +6,9 @@ export const INSTANCE_STATES = {
     SYNCED: 1, // eqv to dirty: false
     UNSYNCED: 2 // eqv to dirty: true
 }
+
+export const REACTIVE_FLAGS = {
+    IS_REACTIVE: Symbol("is_reactive"),
+    IS_REF: Symbol("is_ref"),
+    REF_VALUE: Symbol("ref_value")
+}
