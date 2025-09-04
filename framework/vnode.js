@@ -52,6 +52,14 @@ export class ElementNode {
             this.refFn(null)
         }
 
+        if (Array.isArray(this.properties.directives)) {
+            for (const directive of this.properties.directives) {
+                if (typeof directive.onDestroy === 'function') {
+                    directive.onDestroy(this.el, this)
+                }
+            }
+        }
+
         this.el.remove();
         this.el = null;
         this.children = null;
@@ -87,6 +95,11 @@ export class ComponentNode {
     constructor(component, properties) {
         this.component = component;
         this.properties = Object.assign({}, properties);
+
+        if (Array.isArray(this.properties.directives)) {
+            console.warn("Directive(s) were defined in a ComponentNode, but directives are not supported for Components.")
+        }
+
         this.children = [];
         this.parent = null;
 

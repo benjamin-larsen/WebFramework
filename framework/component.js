@@ -27,10 +27,14 @@ export class ComponentInstance {
         if (!this.vnode) return;
 
         if (typeof this.vnode.component[hookName] === 'function') {
-            this.vnode.component[hookName].apply(
-                this,
-                args
-            )
+            try {
+                this.vnode.component[hookName].apply(
+                    this,
+                    args
+                )
+            } catch(e) {
+                console.log("Error occured while running Lifecycle Hook", e)
+            }
         }
     }
 

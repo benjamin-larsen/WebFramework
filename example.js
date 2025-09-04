@@ -2,7 +2,7 @@ import {
     App,
     head,
     body,
-    reactive,
+    reactive, ref,
     e, t, c, v
 } from './framework/index.js'
 
@@ -35,10 +35,26 @@ function exampleComponent(props) {
         e("div", {}, t("content after component"))]
 }*/
 
+const testDirective = {
+    onMounted(el, vnode) {
+        el.classList.add("test")
+    },
+
+    onUpdated(el, vnode) {
+        el.classList.add("updated")
+    },
+
+    onDestroy(el, vnode) {
+        el.classList.remove("test")
+    }
+}
+
+window.arr = [ testDirective ]
+
 const newComponent = {
     render(props) {
         return [
-            v("div", "new comp")
+            v("div", { directives: window.arr } , "new comp")
         ]
     }
 }
@@ -46,7 +62,7 @@ const newComponent = {
 const arrayReact = reactive([
 ])
 
-for (var i = 0; i < 10000; i++) {
+for (var i = 0; i < 10; i++) {
     
         arrayReact.push({
             key: `${i}`,
@@ -124,6 +140,7 @@ const BodyRoot = {
             v("div", v(innerInnerComponent, { time: Date.now() })),
             //v(someBool.value ? innerInnerComponent : newComponent),
             v("div", `root: ${someValue2.value}`),
+            v(newComponent, { time: Date.now() }),
             someBool.value ? v("Lazy", { loadFunc: () => {
                 return new Promise((resolve) => {
                     setTimeout(resolve.bind(null, {default:innerInnerComponent}), 1000)
@@ -143,5 +160,7 @@ const app = new App(
 
 app.render()
 window.app = app
+window.reactive = reactive
+window.ref = ref
 
 console.log(app)
