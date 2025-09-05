@@ -5,14 +5,11 @@ layout: home
 hero:
   name: "WebFramework API"
   text: "Docuemntation of WebFramework"
-  tagline: Development Build 0.1.13
+  tagline: Development Build 0.1.14
   actions:
     - theme: brand
-      text: Markdown Examples
-      link: /markdown-examples
-    - theme: alt
-      text: API Examples
-      link: /api-examples
+      text: Introduction
+      link: /introduction
 
 features:
   - title: Feature A

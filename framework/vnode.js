@@ -1,14 +1,32 @@
 import { ComponentInstance } from "./component.js";
 import standardComponents from "./standardComponents/index.js";
 
-export class HeadContainer {
-    constructor(component) {
+export class RootContainer {
+    constructor(component, el) {
         this.component = component;
         this.children = [];
 
-        this.el = document.head;
+        this.el = el;
 
         this.instance = new ComponentInstance(this, 0);
+    }
+}
+
+export function root(component, queryOrElement) {
+    let element = queryOrElement;
+
+    if (typeof queryOrElement === 'string') {
+        element = document.querySelector(queryOrElement)
+    }
+
+    if (!(element instanceof HTMLElement)) throw Error("Invalid Root Element");
+
+    return new RootContainer(component, element)
+}
+
+export class HeadContainer extends RootContainer {
+    constructor(component) {
+        super(component, document.head);
     }
 }
 
@@ -16,14 +34,9 @@ export function head(component) {
     return new HeadContainer(component);
 }
 
-export class BodyContainer {
+export class BodyContainer extends RootContainer {
     constructor(component) {
-        this.component = component;
-        this.children = [];
-
-        this.el = document.body;
-
-        this.instance = new ComponentInstance(this, 0);
+        super(component, document.body);
     }
 }
 
@@ -67,9 +80,11 @@ export class ElementNode {
 }
 
 // Create Element Virtual Node
-export function e(tag, attributes, ...children) {
+export function createElement(tag, attributes, ...children) {
     return new ElementNode(tag, attributes, children)
 }
+
+export const e = createElement
 
 export class TextNode {
     constructor(text) {
@@ -87,9 +102,11 @@ export class TextNode {
 }
 
 // Create Text Virtual Node
-export function t(text) {
+export function createTextNode(text) {
     return new TextNode(text)
 }
+
+export const t = createTextNode
 
 export class ComponentNode {
     constructor(component, properties) {
@@ -130,7 +147,7 @@ export class ComponentNode {
 }
 
 // Create Component Virtual Node
-export function c(component, properties) {
+export function createComponent(component, properties) {
     if (typeof component === "string" && standardComponents[component]) {
         return new ComponentNode(standardComponents[component], properties)
     }
@@ -138,10 +155,12 @@ export function c(component, properties) {
     return new ComponentNode(component, properties)
 }
 
+export const c = createComponent
+
 // Create Virtual Node (inferred)
 // Element: v(tag, attributes?, text?, ...children)
 // Component: v(component, properties?)
-export function v(type, ...data) {
+export function createVNode(type, ...data) {
     switch (typeof type) {
         case "string": {
             if (standardComponents[type]) {
@@ -178,3 +197,5 @@ export function v(type, ...data) {
         }
     }
 }
+
+export const v = createVNode

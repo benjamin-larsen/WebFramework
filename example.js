@@ -1,5 +1,6 @@
 import {
     App,
+    root,
     head,
     body,
     reactive, ref,
@@ -155,7 +156,14 @@ const BodyRoot = {
 
 const app = new App(
     head(HeadRoot),
-    body(BodyRoot)
+    root(BodyRoot, "#app"),
+    root({
+        render() {
+            return [
+                v("div", "This is app #2")
+            ]
+        }
+    }, "#app2")
 )
 
 app.render()
