@@ -1,6 +1,16 @@
 export const FUNCTION_CACHE_LIMIT = 20;
 export const RESERVED_PROPS = new Set(["key"])
 
+const BUILD_MODES = {
+    DEV: "development",
+    ALPHA: "alpha"
+}
+
+export const META = {
+    mode: BUILD_MODES.DEV,
+    version: "0.1.13"
+}
+
 export const INSTANCE_STATES = {
     BEFORE_MOUNT: 0,
     SYNCED: 1, // eqv to dirty: false

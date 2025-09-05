@@ -34,7 +34,7 @@ export function body(component) {
 export class ElementNode {
     constructor(tag, properties, children) {
         this.tag = tag;
-        this.properties = Object.assign({}, properties);
+        this.properties = properties;
         this.children = children;
 
         this.el = null;
@@ -94,7 +94,7 @@ export function t(text) {
 export class ComponentNode {
     constructor(component, properties) {
         this.component = component;
-        this.properties = Object.assign({}, properties);
+        this.properties = Object.freeze(properties);
 
         if (Array.isArray(this.properties.directives)) {
             console.warn("Directive(s) were defined in a ComponentNode, but directives are not supported for Components.")

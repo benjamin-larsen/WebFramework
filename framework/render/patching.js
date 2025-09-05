@@ -7,13 +7,16 @@ import { shallowCompareObj } from "../helpers.js";
 
 function patchElement(parentNode, nextNode, prevNode, prevChildren, index, level) {
     if (prevNode && prevNode.constructor === ElementNode && prevNode.el && prevNode.tag === nextNode.tag) {
+        if (prevNode.properties === nextNode.properties) {
+            throw Error("Fatal Error: Properties was re-used.")
+        }
+
         nextNode.el = prevNode.el;
         patch(nextNode, prevNode.children, nextNode.children, level)
         patchProps(prevNode, nextNode);
     } else {
         if (prevNode) {
             prevNode.unmount()
-            prevNode = null
         }
 
         const el = document.createElement(nextNode.tag);
@@ -53,6 +56,10 @@ function patchComponent(parentNode, nextNode, prevNode, index, level) {
         nextNode.instance.vnode = nextNode
     } else {
         nextNode.instance = new ComponentInstance(nextNode, level + 1)
+    }
+
+    if (isSameComponent && prevNode.properties === nextNode.properties) {
+        throw Error("Fatal Error: Properties was re-used.")
     }
 
     if (

@@ -4,7 +4,10 @@
   "description": "Web Framework made in Vanilla JavaScript",
   "main": "framework/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
   },
   "repository": {
     "type": "git",
@@ -18,6 +21,8 @@
   "homepage": "https://github.com/benjamin-larsen/WebFramework#readme",
   "devDependencies": {
     "eslint": "^9.34.0",
+    "prettier": "3.6.2",
+    "vitepress": "^2.0.0-alpha.12",
     "webpack": "^5.101.3",
     "webpack-cli": "^6.0.1"
   }

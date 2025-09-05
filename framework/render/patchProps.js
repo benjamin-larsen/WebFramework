@@ -161,6 +161,10 @@ export function patchProp(prevNode, nextNode, prop, value) {
 }
 
 export function patchProps(prevNode, nextNode) {
+    if (Object.isFrozen(nextNode.properties)) {
+        throw Error("Properties of Next Node is frozen, likely re-used object.")
+    }
+
     for (const prop in nextNode.properties) {
         const value = nextNode.properties[prop];
 
@@ -178,4 +182,6 @@ export function patchProps(prevNode, nextNode) {
             patchProp(prevNode, nextNode, prop, null)
         }
     }
+
+    Object.freeze(nextNode.properties)
 }
