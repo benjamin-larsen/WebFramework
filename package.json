@@ -5,9 +5,9 @@
   "main": "framework/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "docs:dev": "vitepress dev docs",
-    "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "docs:dev": "vitepress dev docsSrc",
+    "docs:build": "vitepress build docsSrc",
+    "docs:preview": "vitepress preview docsSrc"
   },
   "repository": {
     "type": "git",

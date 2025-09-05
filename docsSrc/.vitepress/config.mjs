@@ -5,6 +5,7 @@ export default defineConfig({
   title: "WebFramework API",
   description: "Docuemntation of WebFramework",
   base: '/WebFramework/',
+  outDir: '../docs',
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
