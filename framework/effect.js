@@ -2,8 +2,6 @@ const targetMap = new Map()
 const effectStack = [];
 let bypassCounter = 0;
 
-window.targetMap = targetMap
-
 class Subscription {
     constructor(dep, sub) {
         this.dep = dep;
