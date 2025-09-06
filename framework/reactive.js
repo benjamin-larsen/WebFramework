@@ -1,4 +1,4 @@
-import { effectStack, depManager } from "./render/index.js"; 
+import { depManager } from "./render/index.js"; 
 import { REACTIVE_FLAGS } from "./constants.js";
 
 const reactiveMap = new WeakMap()
@@ -9,11 +9,7 @@ const reactiveHandler = {
             return true;
         }
 
-        const currentEffect = effectStack.getActiveEffect();
-
-        if (currentEffect) {
-            currentEffect("get", {target, prop, receiver})
-        }
+        depManager.track(target)
 
         const value = target[prop];
 
@@ -35,11 +31,7 @@ const reactiveHandler = {
         return true;
     },
     ownKeys(target) {
-        const currentEffect = effectStack.getActiveEffect();
-
-        if (currentEffect) {
-            currentEffect("get", { target })
-        }
+        depManager.track(target)
 
         return Object.keys(target)
     },
@@ -70,14 +62,7 @@ class ReactiveRef {
     }
 
     get value() {
-        const currentEffect = effectStack.getActiveEffect();
-
-        if (currentEffect) {
-            currentEffect("get", {
-                target: this,
-                prop: "value"
-            })
-        }
+        depManager.track(this)
 
         const value = this[REACTIVE_FLAGS.REF_VALUE];
 

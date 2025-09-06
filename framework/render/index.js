@@ -3,32 +3,10 @@ import { refreshComponentAnchor } from "../anchor.js";
 import { patch } from "./patching.js";
 import { INSTANCE_STATES } from "../constants.js";
 
-class EffectStack {
-    constructor() {
-        this.stack = [];
-    }
-
-    push(func) {
-        this.stack.push(func)
-    }
-
-    pop() {
-        this.stack.pop()
-    }
-
-    getActiveEffect() {
-        if (this.stack.length >= 1) {
-            // get top of stack
-            return this.stack[this.stack.length - 1]
-        }
-
-        return null
-    }
-}
-
 class DependencyManager {
     constructor() {
         this.subscriptions = new Map()
+        this.trackerStack = [];
     }
 
     sub(target, func) {
@@ -53,6 +31,15 @@ class DependencyManager {
         }
     }
 
+    track(target) {
+        if (this.trackerStack.length <= 0) return;
+        
+        const instance = this.trackerStack[this.trackerStack.length - 1];
+
+        instance.effects.add(target)
+        this.sub(target, instance)
+    }
+
     trigger(target) {
         const subscribers = this.subscriptions.get(target)
         if (!subscribers) return;
@@ -63,17 +50,12 @@ class DependencyManager {
     }
 
     withTracking(instance, func) {
-        effectStack.push((type, info) => {
-            if (type !== "get") return;
-
-            instance.effects.add(info.target)
-            depManager.sub(info.target, instance)
-        })
+        this.trackerStack.push(instance)
 
         try {
             return func()
         } finally {
-            effectStack.pop()
+            this.trackerStack.pop()
         }
     }
 }
@@ -112,7 +94,6 @@ class RenderQueue {
     }
 }
 
-export const effectStack = new EffectStack()
 export const depManager = new DependencyManager()
 export const renderQueue = new RenderQueue()
 
