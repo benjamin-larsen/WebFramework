@@ -1,4 +1,4 @@
-import { renderQueue, depManager } from "./render/index.js";
+import { renderQueue, depManager, DependencySubscriber } from "./render/index.js";
 import { FUNCTION_CACHE_LIMIT, INSTANCE_STATES } from "./constants.js";
 
 export class ComponentInstance {
@@ -9,7 +9,9 @@ export class ComponentInstance {
 
         this.data = {};
 
-        this.effects = new Set();
+        this.subscriber = new DependencySubscriber(
+            this.$forceUpdate.bind(this)
+        );
         this.cachedFunctions = new Map();
         this.cacheHistory = [];
 
@@ -56,16 +58,8 @@ export class ComponentInstance {
         renderQueue.queue(this)
     }
 
-    cleanEffects() {
-        for (const effect of this.effects) {
-            depManager.unsub(effect, this);
-        }
-
-        this.effects.clear()
-    }
-
     destroy() {
-        this.cleanEffects()
+        this.subscriber.destroy()
         this.vnode = null;
     }
 }

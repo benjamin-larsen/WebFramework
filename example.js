@@ -7,6 +7,8 @@ import {
     e, t, c, v
 } from './framework/index.js'
 
+import { depManager, renderNode } from './framework/render/index.js'
+
 const someValue = reactive({ value: "hi" })
 const someValue2 = reactive({ value: "test" }) 
 const boolObj = { value: false }
@@ -38,6 +40,7 @@ function exampleComponent(props) {
 
 const testDirective = {
     onMounted(el, vnode) {
+        console.log(this)
         el.classList.add("test")
     },
 
@@ -134,11 +137,34 @@ const HeadRoot = {
     }
 }
 
+const newReactive = ref("test")
+
+window.newReactive = newReactive;
+
+const rootNode = root({
+        render() {
+            return [
+                v("div", "This is app #2")
+            ]
+        }
+    }, "#app2")
+
+window.testCond = false;
+
 const BodyRoot = {
-    render() {
+    render(props) {
+        depManager.withoutTracking(() => {
+            console.log(newReactive.value)
+            //renderNode(rootNode, true)
+        })
+
+        if (window.testCond) {
+            console.log(newReactive.value)
+        }
+
         return [
             v("div", { onclick: function () { alert('test')}, class: ["test", "test2"] }, "Hi", " hah"),
-            v("div", v(innerInnerComponent, { time: Date.now() })),
+            //v("div", v(innerInnerComponent, { time: Date.now() })),
             //v(someBool.value ? innerInnerComponent : newComponent),
             v("div", `root: ${someValue2.value}`),
             v(newComponent, { time: Date.now() }),
@@ -157,13 +183,7 @@ const BodyRoot = {
 const app = new App(
     head(HeadRoot),
     root(BodyRoot, "#app"),
-    root({
-        render() {
-            return [
-                v("div", "This is app #2")
-            ]
-        }
-    }, "#app2")
+    rootNode
 )
 
 app.render()
