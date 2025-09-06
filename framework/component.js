@@ -1,5 +1,6 @@
-import { renderQueue, depManager, DependencySubscriber } from "./render/index.js";
+import { renderQueue } from "./render/index.js";
 import { FUNCTION_CACHE_LIMIT, INSTANCE_STATES } from "./constants.js";
+import { DependencySubscriber } from "./effect.js";
 
 export class ComponentInstance {
     constructor(vnode, level) {

@@ -1,4 +1,4 @@
-import { depManager } from "./render/index.js"; 
+import { track, trigger } from "./effect.js";
 import { REACTIVE_FLAGS } from "./constants.js";
 
 const reactiveMap = new WeakMap()
@@ -9,7 +9,7 @@ const reactiveHandler = {
             return true;
         }
 
-        depManager.track(target)
+        track(target)
 
         const value = target[prop];
 
@@ -25,20 +25,20 @@ const reactiveHandler = {
         target[prop] = value;
 
         if (shouldTrigger) {
-            depManager.trigger(target)
+            trigger(target)
         }
 
         return true;
     },
     ownKeys(target) {
-        depManager.track(target)
+        track(target)
 
         return Object.keys(target)
     },
     deleteProperty(target, prop) {
         if (prop in target) {
             delete target[prop]
-            depManager.trigger(target)
+            trigger(target)
         }
 
         return true
@@ -62,7 +62,7 @@ class ReactiveRef {
     }
 
     get value() {
-        depManager.track(this)
+        track(this)
 
         const value = this[REACTIVE_FLAGS.REF_VALUE];
 
@@ -79,7 +79,7 @@ class ReactiveRef {
         this[REACTIVE_FLAGS.REF_VALUE] = newValue;
 
         if (shouldTrigger) {
-            depManager.trigger(this)
+            trigger(this)
         }
     }
 }

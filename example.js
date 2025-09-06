@@ -7,7 +7,8 @@ import {
     e, t, c, v
 } from './framework/index.js'
 
-import { depManager, renderNode } from './framework/render/index.js'
+import { renderNode } from './framework/render/index.js'
+import { withoutTracking } from './framework/effect.js'
 
 const someValue = reactive({ value: "hi" })
 const someValue2 = reactive({ value: "test" }) 
@@ -153,7 +154,7 @@ window.testCond = false;
 
 const BodyRoot = {
     render(props) {
-        depManager.withoutTracking(() => {
+        withoutTracking(() => {
             console.log(newReactive.value)
             //renderNode(rootNode, true)
         })
