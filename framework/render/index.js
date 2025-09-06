@@ -7,6 +7,7 @@ class DependencyManager {
     constructor() {
         this.subscriptions = new Map()
         this.trackerStack = [];
+        this.trackDisabled = 0;
     }
 
     sub(target, func) {
@@ -32,6 +33,7 @@ class DependencyManager {
     }
 
     track(target) {
+        if (this.trackDisabled > 0) return;
         if (this.trackerStack.length <= 0) return;
         
         const instance = this.trackerStack[this.trackerStack.length - 1];
@@ -46,6 +48,16 @@ class DependencyManager {
 
         for (const sub of subscribers) {
             renderQueue.queue(sub)
+        }
+    }
+
+    withoutTracking(func) {
+        this.trackDisabled++
+
+        try {
+            return func()
+        } finally {
+            this.trackDisabled--
         }
     }
 
