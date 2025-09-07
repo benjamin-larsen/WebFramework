@@ -29,7 +29,7 @@ export default {
         this.loadFunction(loadFunc)
     },
 
-    onUpdated({ loadFunc }) {
+    beforeUpdate({ loadFunc }) {
         if (this.activeFunc.func === loadFunc) return;
 
         this.loadFunction(loadFunc)

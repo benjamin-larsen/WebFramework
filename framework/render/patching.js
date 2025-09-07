@@ -86,6 +86,8 @@ function patchComponent(parentNode, nextNode, prevNode, index, level) {
         nextNode.index = index;
         nextNode.parent = parentNode;
         nextNode.el = parentNode.el;
+
+        nextNode.instance.callHook("beforeUpdate", nextNode.properties)
         renderNode(nextNode, true)
     }
 }
