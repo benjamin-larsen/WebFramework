@@ -6,6 +6,7 @@ export default {
         loadFunction(func) {
             if (this.activeFunc) {
                 this.activeFunc.cancelled = true
+                this.component.value = null
             }
 
             const funcObj = {
