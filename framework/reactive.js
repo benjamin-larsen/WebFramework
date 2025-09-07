@@ -5,7 +5,9 @@ const reactiveMap = new WeakMap()
 
 const reactiveHandler = {
     get(target, prop, receiver) {
-        if (prop === REACTIVE_FLAGS) {
+        if (prop === REACTIVE_FLAGS.UNWRAP) return target;
+
+        if (prop === REACTIVE_FLAGS.IS_REACTIVE) {
             return true;
         }
 
@@ -46,7 +48,7 @@ const reactiveHandler = {
 }
 
 export function reactive(target) {
-    if (target[REACTIVE_FLAGS]) return target;
+    if (target[REACTIVE_FLAGS.IS_REACTIVE]) return target;
     if (reactiveMap.has(target)) return reactiveMap.get(target);
     const proxy = new Proxy(target, reactiveHandler);
 

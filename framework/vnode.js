@@ -1,4 +1,5 @@
 import { ComponentInstance } from "./component.js";
+import { REACTIVE_FLAGS } from "./constants.js";
 import standardComponents from "./standardComponents/index.js";
 
 export class RootContainer {
@@ -110,7 +111,12 @@ export const t = createTextNode
 
 export class ComponentNode {
     constructor(component, properties) {
-        this.component = component;
+        if (component[REACTIVE_FLAGS.IS_REACTIVE]) {
+            this.component = component[REACTIVE_FLAGS.UNWRAP];
+        } else {
+            this.component = component;
+        }
+
         this.properties = Object.freeze(properties);
 
         if (Array.isArray(this.properties.directives)) {
