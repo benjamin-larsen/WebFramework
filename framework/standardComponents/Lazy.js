@@ -37,9 +37,10 @@ export default {
     render(props) {
         const childProps = { ...props }
         delete childProps.loadFunc;
+        delete childProps.fallback;
 
         return [
-            this.component.value ? c(this.component.value, childProps) : null
+            this.component.value ? c(this.component.value, childProps) : props.fallback ? c(props.fallback, {}) : null
         ]
     }
 }

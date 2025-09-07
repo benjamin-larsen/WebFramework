@@ -173,6 +173,10 @@ const BodyRoot = {
                 return new Promise((resolve) => {
                     setTimeout(resolve.bind(null, {default:innerInnerComponent}), 1000)
                 })
+            }, fallback: {
+                render() {
+                    return [v("div", "Loading...")]
+                }
             } }) : null
             /*v(() => [
 

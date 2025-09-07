@@ -8,7 +8,7 @@ const BUILD_MODES = {
 
 export const META = {
     mode: BUILD_MODES.DEV,
-    version: "0.1.15"
+    version: "0.1.16"
 }
 
 export const INSTANCE_STATES = {
