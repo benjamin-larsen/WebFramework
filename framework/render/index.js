@@ -55,7 +55,7 @@ export function renderNode(node, force) {
     const nextChildren = withTracking(
         node.instance.subscriber,
         node.component.render.bind(
-            node.instance,
+            node.instance.public,
             node.properties
         )
     )
