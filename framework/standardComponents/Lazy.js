@@ -2,12 +2,36 @@ import { ref } from "../reactive.js"
 import { c } from "../vnode.js"
 
 export default {
-    onCreated({ loadFunc }) {
-        this.data.component = ref(null)
+    methods: {
+        loadFunction(func) {
+            if (this.activeFunc) {
+                this.activeFunc.cancelled = true
+            }
 
-        loadFunc().then(module => {
-            this.data.component.value = module.default
-        })
+            const funcObj = {
+                cancelled: false,
+                func
+            }
+
+            this.activeFunc = funcObj
+
+            func().then(module => {
+                if (funcObj.cancelled) return;
+                this.component.value = module.default
+            })
+        }
+    },
+
+    onCreated({ loadFunc }) {
+        this.component = ref(null)
+        
+        this.loadFunction(loadFunc)
+    },
+
+    onUpdated({ loadFunc }) {
+        if (this.activeFunc.func === loadFunc) return;
+
+        this.loadFunction(loadFunc)
     },
 
     render(props) {
@@ -15,7 +39,7 @@ export default {
         delete childProps.loadFunc;
 
         return [
-            this.data.component.value ? c(this.data.component.value, childProps) : null
+            this.component.value ? c(this.component.value, childProps) : null
         ]
     }
 }
