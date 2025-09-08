@@ -1,6 +1,7 @@
 import { renderQueue } from "./render/index.js";
 import { FUNCTION_CACHE_LIMIT, INSTANCE_STATES } from "./constants.js";
 import { DependencySubscriber } from "./effect.js";
+import { registerHMRComponent, removeHMRComponent } from "./hmr.js";
 
 const reservedProps = new Set([
     "methods",
@@ -116,6 +117,10 @@ export class ComponentInstance {
         this.cacheHistory = [];
 
         this.callHook("onCreated", this.vnode.properties)
+
+        if (import.meta.hot) {
+            registerHMRComponent(this)
+        }
     }
 
     setStatus(status) {
@@ -159,6 +164,10 @@ export class ComponentInstance {
     }
 
     destroy() {
+        if (import.meta.hot) {
+            removeHMRComponent(this)
+        }
+
         this.subscriber.destroy()
         this.vnode = null;
     }

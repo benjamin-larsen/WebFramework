@@ -117,6 +117,14 @@ export class ComponentNode {
             this.component = component;
         }
 
+        if (import.meta.hot) {
+            const mappedComponent = window.HMR.componentMap.get(this.component._hmrid)
+            
+            if (mappedComponent) {
+                this.component = mappedComponent
+            }
+        }
+
         this.properties = Object.freeze(properties);
 
         if (Array.isArray(this.properties.directives)) {
