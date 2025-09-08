@@ -1,6 +1,6 @@
 {
-  "name": "webframework",
-  "version": "0.0.1",
+  "name": "noctes",
+  "version": "0.2.0",
   "description": "Web Framework made in Vanilla JavaScript",
   "main": "framework/index.js",
   "scripts": {
@@ -22,8 +22,6 @@
   "devDependencies": {
     "eslint": "^9.34.0",
     "prettier": "3.6.2",
-    "vitepress": "^2.0.0-alpha.12",
-    "webpack": "^5.101.3",
-    "webpack-cli": "^6.0.1"
+    "vitepress": "^2.0.0-alpha.12"
   }
 }

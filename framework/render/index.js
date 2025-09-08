@@ -64,6 +64,4 @@ export function renderNode(node, force) {
 
     node.instance.setStatus(INSTANCE_STATES.SYNCED)
     node.instance.callHook(node.instance.status === INSTANCE_STATES.BEFORE_MOUNT ? "onMounted" : "onUpdated", node.properties || {})
-
-    console.log(performance.now() - startTime, node)
 }
