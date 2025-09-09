@@ -1,4 +1,4 @@
-import { INSTANCE_STATES } from "./constants";
+import { INSTANCE_STATES } from "./constants.js";
 
 const instanceMap = new Map()
 const componentMap = new Map()
