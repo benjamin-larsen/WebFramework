@@ -1,3 +1,5 @@
+import { INSTANCE_STATES } from "./constants";
+
 const instanceMap = new Map()
 const componentMap = new Map()
 
@@ -30,14 +32,51 @@ export function removeHMRComponent(instance) {
     instanceSet.delete(instance)
 }
 
+function fullReload(instance, newComponent) {
+    // Cleanup old
+    instance.callHook("onDestroy")
+    instance.data = {}
+    instance.status = INSTANCE_STATES.BEFORE_MOUNT
+
+    // Setup new
+    instance.vnode.component = newComponent;
+
+    instance.callHook("onCreated", instance.vnode.properties)
+    instance.update()
+}
+
+function rerender(instance, newComponent) {
+    instance.vnode.component = newComponent;
+    instance.update()
+}
+
+function shouldFullReload(instance, newComponent) {
+    const hasPrev = typeof instance.vnode.component.onCreated === 'function'
+    const hasNext = typeof newComponent.onCreated === 'function'
+
+    console.log({ hasNext, hasPrev })
+
+    if (hasPrev && !hasNext) return true;
+    if (!hasPrev && hasNext) return true;
+    if (!hasPrev && !hasNext) return false;
+
+    if (instance.vnode.component.onCreated.toString() !== newComponent.onCreated.toString()) return true;
+
+    return false;
+}
+
 function hotUpdate(hmrId, newComponent) {
     const instanceSet = instanceMap.get(hmrId);
     if (!instanceSet) return;
 
     for (const instance of instanceSet) {
         if (!instance.vnode) continue;
-        instance.vnode.component = newComponent;
-        instance.update()
+
+        if (shouldFullReload(instance, newComponent)) {
+            fullReload(instance, newComponent)
+        } else {
+            rerender(instance, newComponent)
+        }
     }
 }
 
