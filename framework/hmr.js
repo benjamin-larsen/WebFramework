@@ -54,8 +54,6 @@ function shouldFullReload(instance, newComponent) {
     const hasPrev = typeof instance.vnode.component.onCreated === 'function'
     const hasNext = typeof newComponent.onCreated === 'function'
 
-    console.log({ hasNext, hasPrev })
-
     if (hasPrev && !hasNext) return true;
     if (!hasPrev && hasNext) return true;
     if (!hasPrev && !hasNext) return false;
