@@ -32,6 +32,12 @@ export default {
     this.loadFunction(loadFunc);
   },
 
+  onDestroy() {
+    if (this.activeFunc) {
+      this.activeFunc.cancelled = true;
+    }
+  },
+
   render(props) {
     const childProps = { ...props };
     delete childProps.loadFunc;
