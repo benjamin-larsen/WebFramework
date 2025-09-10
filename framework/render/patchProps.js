@@ -51,7 +51,7 @@ function createInvoker(func, node) {
 }
 
 function patchEvent(prevNode, nextNode, propName, listenerFn) {
-  const eventName = propName.substring(2);
+  const eventName = propName[2].toLowerCase() + propName.substring(3);
   const hasPrevInvoker = prevNode && prevNode.properties[propName];
 
   if (typeof listenerFn !== 'function') {
@@ -113,10 +113,20 @@ function patchDirectives(prevNode, nextNode, directives) {
   }
 }
 
+function isEvent(propName) {
+  if (propName.length < 3) return false;
+  if (propName[0] !== 'o') return false;
+  if (propName[1] !== 'n') return false;
+  if (propName.charCodeAt(2) < 65) return false;
+  if (propName.charCodeAt(2) > 90) return false;
+
+  return true;
+}
+
 export function patchProp(prevNode, nextNode, prop, value) {
   if (RESERVED_PROPS.has(prop)) return;
 
-  if (prop.startsWith('on')) {
+  if (isEvent(prop)) {
     patchEvent(
       prevNode,
       nextNode,
