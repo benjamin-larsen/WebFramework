@@ -4,6 +4,7 @@ import { patchProps } from './patchProps.js';
 import { ComponentNode, ElementNode, TextNode } from '../vnode.js';
 import { ComponentInstance } from '../component.js';
 import { shallowCompareObj } from '../helpers.js';
+import { INSTANCE_STATES } from '../constants.js';
 
 function patchElement(
   parentNode,
@@ -108,7 +109,12 @@ function patchComponent(parentNode, nextNode, prevNode, index, level) {
     nextNode.parent = parentNode;
     nextNode.el = parentNode.el;
 
-    nextNode.instance.callHook('beforeUpdate', nextNode.properties);
+    nextNode.instance.callHook(
+      nextNode.instance.status === INSTANCE_STATES.BEFORE_MOUNT
+        ? 'beforeMount'
+        : 'beforeUpdate',
+      nextNode.properties
+    );
     renderNode(nextNode, true);
   }
 }

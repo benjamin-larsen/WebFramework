@@ -57,12 +57,17 @@ export function renderNode(node, force) {
     node.component.render.bind(node.instance.public, node.properties)
   );
 
+  if (!Array.isArray(nextChildren)) {
+    throw Error('Render function must return a Fragment.');
+  }
 
   patch(node, prevChildren, nextChildren, node.instance.level);
 
+  const isMounted = node.instance.status === INSTANCE_STATES.BEFORE_MOUNT;
+
   node.instance.setStatus(INSTANCE_STATES.SYNCED);
   node.instance.callHook(
-    node.instance.status === INSTANCE_STATES.BEFORE_MOUNT
+    isMounted
       ? 'onMounted'
       : 'onUpdated',
     node.properties || {}
