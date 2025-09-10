@@ -56,7 +56,7 @@ function patchText(parentNode, nextText, prevNode, prevChildren, index) {
       prevNode.unmount();
     }
 
-    const nextNode = new TextNode(nextText)
+    const nextNode = new TextNode(nextText);
     const el = document.createTextNode(nextText);
     nextNode.el = el;
 
@@ -182,7 +182,13 @@ export function patch(parentNode, prevChildren, nextChildren, level) {
     const prevNode = prevChildren[index];
 
     if (typeof nextNode === 'string') {
-      nextChildren[index] = patchText(parentNode, nextNode, prevNode, prevChildren, index);
+      nextChildren[index] = patchText(
+        parentNode,
+        nextNode,
+        prevNode,
+        prevChildren,
+        index
+      );
       continue;
     }
 
