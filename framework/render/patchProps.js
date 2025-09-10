@@ -1,4 +1,5 @@
 import { RESERVED_PROPS } from '../constants.js';
+import { isRef } from '../reactive.js';
 
 function patchClassName(prevNode, nextNode, classList) {
   let computedClass = classList || '';
@@ -136,14 +137,14 @@ export function patchProp(prevNode, nextNode, prop, value) {
   } else if (prop === 'directives') {
     patchDirectives(prevNode, nextNode, value);
   } else if (prop === 'ref') {
-    if (prevNode && typeof prevNode.properties.ref === 'function') {
+    if (prevNode && isRef(prevNode.properties.ref)) {
       if (prevNode.properties.ref === value) return;
 
       prevNode.properties.ref(null);
     }
 
-    if (typeof value === 'function') {
-      value(nextNode.el);
+    if (isRef(value)) {
+      value.value = nextNode.el;
     }
   } else if (prop === 'class') {
     patchClassName(prevNode, nextNode, value);

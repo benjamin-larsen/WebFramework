@@ -94,6 +94,16 @@ class ReactiveRef {
   }
 }
 
+export function isRef(obj) {
+  if (
+    obj !== null &&
+    typeof obj === 'object' &&
+    obj[REACTIVE_FLAGS.IS_REF]
+  ) return true;
+
+  return false;
+}
+
 export function ref(initValue) {
   if (
     initValue !== null &&

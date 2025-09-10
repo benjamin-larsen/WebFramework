@@ -1,6 +1,7 @@
 import { ComponentInstance } from './component.js';
 import { REACTIVE_FLAGS } from './constants.js';
 import standardComponents from './standardComponents/index.js';
+import { isRef } from './reactive.js';
 
 export class RootContainer {
   constructor(component, el) {
@@ -62,8 +63,8 @@ export class ElementNode {
       child.unmount();
     }
 
-    if (this.refFn) {
-      this.refFn(null);
+    if (isRef(this.properties.ref)) {
+      this.properties.ref.value = null;
     }
 
     if (Array.isArray(this.properties.directives)) {
