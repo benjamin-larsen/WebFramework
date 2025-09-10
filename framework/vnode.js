@@ -46,6 +46,30 @@ export function body(component) {
   return new BodyContainer(component);
 }
 
+export class FragmentNode {
+  constructor() {
+    this.children = [];
+
+    this.index = null;
+    this.parent = null;
+    this.anchor = null;
+    this.el = null;
+  }
+
+  unmount() {
+    this.anchor = null;
+
+    for (const child of this.children) {
+      if (!child) continue;
+      child.unmount();
+    }
+
+    // Prevent Memory Leak
+    this.parent = null;
+    this.children = null;
+  }
+}
+
 export class ElementNode {
   constructor(tag, properties, children) {
     this.tag = tag;

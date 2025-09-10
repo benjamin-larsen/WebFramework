@@ -16,7 +16,8 @@ import {
   RootContainer,
   ElementNode,
   ComponentNode,
-  TextNode
+  TextNode,
+  FragmentNode
 } from './vnode.js';
 
 function printVNode(node, indent = '') {
@@ -28,6 +29,8 @@ function printVNode(node, indent = '') {
     console.log(`${indent}<Component`, node.component, '>');
   } else if (node instanceof TextNode) {
     console.log(`${indent}#text ${JSON.stringify(node.text)}`);
+  } else if (node instanceof FragmentNode) {
+    console.log(`${indent}<Fragment>`);
   } else {
     console.log(`${indent}<empty slot>`);
   }
@@ -42,6 +45,8 @@ function printVNode(node, indent = '') {
     console.log(`${indent}</Root>`);
   } else if (node instanceof ElementNode) {
     console.log(`${indent}</${node.tag}>`);
+  } else if (node instanceof FragmentNode) {
+    console.log(`${indent}</Fragment>`);
   } else if (node instanceof ComponentNode) {
     console.log(`${indent}</Component>`);
   }

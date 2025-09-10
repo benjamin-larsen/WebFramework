@@ -1,10 +1,36 @@
 import { renderNode } from './index.js';
-import { findAnchor } from '../anchor.js';
+import { findAnchor, refreshComponentAnchor } from '../anchor.js';
 import { patchProps } from './patchProps.js';
-import { ComponentNode, ElementNode, TextNode } from '../vnode.js';
+import { ComponentNode, ElementNode, FragmentNode, TextNode } from '../vnode.js';
 import { ComponentInstance } from '../component.js';
 import { shallowCompareObj } from '../helpers.js';
 import { INSTANCE_STATES } from '../constants.js';
+
+function patchFragment(parentNode, nextArray, prevNode, index, level) {
+  if (prevNode && prevNode.constructor === FragmentNode && prevNode.el) {
+    prevNode.el = parentNode.el;
+    prevNode.parent = parentNode;
+    prevNode.index = index;
+
+    refreshComponentAnchor(prevNode);
+    patch(prevNode, prevNode.children, nextArray, level);
+    return prevNode;
+  } else {
+    if (prevNode) {
+      prevNode.unmount();
+    }
+
+    const nextNode = new FragmentNode()
+    nextNode.el = parentNode.el;
+    nextNode.parent = parentNode;
+    nextNode.index = index;
+
+    refreshComponentAnchor(nextNode);
+    patch(nextNode, [], nextArray, level);
+
+    return nextNode;
+  }
+}
 
 function patchElement(
   parentNode,
@@ -196,6 +222,11 @@ export function patch(parentNode, prevChildren, nextChildren, level) {
         prevChildren,
         index
       );
+      continue;
+    }
+
+    if (Array.isArray(nextNode)) {
+      nextChildren[index] = patchFragment(parentNode, nextNode, prevNode, index, level);
       continue;
     }
 
