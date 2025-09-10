@@ -1,86 +1,87 @@
-import { INSTANCE_STATES } from "./constants.js";
+import { INSTANCE_STATES } from './constants.js';
 
-const instanceMap = new Map()
-const componentMap = new Map()
+const instanceMap = new Map();
+const componentMap = new Map();
 
 export function registerHMRComponent(instance) {
-    const component = instance.vnode.component;
-    const hmrId = component._hmrid;
+  const component = instance.vnode.component;
+  const hmrId = component._hmrid;
 
-    if (typeof hmrId !== 'string') return;
+  if (typeof hmrId !== 'string') return;
 
-    let instanceSet = instanceMap.get(hmrId);
+  let instanceSet = instanceMap.get(hmrId);
 
-    if (!instanceSet) {
-        instanceSet = new Set()
-        instanceMap.set(hmrId, instanceSet)
-    }
+  if (!instanceSet) {
+    instanceSet = new Set();
+    instanceMap.set(hmrId, instanceSet);
+  }
 
-    instanceSet.add(instance)
+  instanceSet.add(instance);
 }
 
 export function removeHMRComponent(instance) {
-    const component = instance.vnode.component;
-    const hmrId = component._hmrid;
+  const component = instance.vnode.component;
+  const hmrId = component._hmrid;
 
-    if (typeof hmrId !== 'string') return;
+  if (typeof hmrId !== 'string') return;
 
-    const instanceSet = instanceMap.get(hmrId);
+  const instanceSet = instanceMap.get(hmrId);
 
-    if (!instanceSet) return
+  if (!instanceSet) return;
 
-    instanceSet.delete(instance)
+  instanceSet.delete(instance);
 }
 
 function fullReload(instance, newComponent) {
-    // Cleanup old
-    instance.callHook("onDestroy")
-    instance.data = {}
-    instance.status = INSTANCE_STATES.BEFORE_MOUNT
+  // Cleanup old
+  instance.callHook('onDestroy');
+  instance.data = {};
+  instance.status = INSTANCE_STATES.BEFORE_MOUNT;
 
-    // Setup new
-    instance.vnode.component = newComponent;
+  // Setup new
+  instance.vnode.component = newComponent;
 
-    instance.callHook("onCreated", instance.vnode.properties)
-    instance.update()
+  instance.callHook('onCreated', instance.vnode.properties);
+  instance.update();
 }
 
 function rerender(instance, newComponent) {
-    instance.vnode.component = newComponent;
-    instance.update()
+  instance.vnode.component = newComponent;
+  instance.update();
 }
 
 function shouldFullReload(instance, newComponent) {
-    const hasPrev = typeof instance.vnode.component.onCreated === 'function'
-    const hasNext = typeof newComponent.onCreated === 'function'
+  const hasPrev = typeof instance.vnode.component.onCreated === 'function';
+  const hasNext = typeof newComponent.onCreated === 'function';
 
-    if (hasPrev && !hasNext) return true;
-    if (!hasPrev && hasNext) return true;
-    if (!hasPrev && !hasNext) return false;
+  if (hasPrev && !hasNext) return true;
+  if (!hasPrev && hasNext) return true;
+  if (!hasPrev && !hasNext) return false;
 
-    if (instance.vnode.component.onCreated.toString() !== newComponent.onCreated.toString()) return true;
+  if (
+    instance.vnode.component.onCreated.toString() !==
+    newComponent.onCreated.toString()
+  )
+    return true;
 
-    return false;
+  return false;
 }
 
 function hotUpdate(hmrId, newComponent) {
-    const instanceSet = instanceMap.get(hmrId);
-    if (!instanceSet) return;
+  const instanceSet = instanceMap.get(hmrId);
+  if (!instanceSet) return;
 
-    for (const instance of instanceSet) {
-        if (!instance.vnode) continue;
+  for (const instance of instanceSet) {
+    if (!instance.vnode) continue;
 
-        if (shouldFullReload(instance, newComponent)) {
-            fullReload(instance, newComponent)
-        } else {
-            rerender(instance, newComponent)
-        }
+    if (shouldFullReload(instance, newComponent)) {
+      fullReload(instance, newComponent);
+    } else {
+      rerender(instance, newComponent);
     }
+  }
 }
 
 if (import.meta.hot) {
-    window.HMR = {
-        componentMap,
-        hotUpdate
-    }
+  window.HMR = { componentMap, hotUpdate };
 }

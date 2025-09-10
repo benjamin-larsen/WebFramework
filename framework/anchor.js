@@ -1,39 +1,39 @@
-import { ComponentNode } from "./vnode.js";
+import { ComponentNode } from './vnode.js';
 
 export function findAnchor(oldRender, index) {
-    for (var i = (index + 1); i < oldRender.length; i++) {
-        const item = oldRender[i]
-        if (!item) continue;
+  for (var i = index + 1; i < oldRender.length; i++) {
+    const item = oldRender[i];
+    if (!item) continue;
 
-        if (item.constructor === ComponentNode) {
-            const anchor = findAnchor(item.children, -1);
-            if (anchor) return anchor
-        } else {
-            return item.el
-        }
+    if (item.constructor === ComponentNode) {
+      const anchor = findAnchor(item.children, -1);
+      if (anchor) return anchor;
+    } else {
+      return item.el;
     }
+  }
 
-    return null;
+  return null;
 }
 
 // Make better and more efficent system later, perhaps using two-phase rendering
 function findComponentAnchor(component) {
-    if (!(component && component.constructor === ComponentNode)) return null;
-    const anchor = findAnchor(component.parent.children, component.index)
+  if (!(component && component.constructor === ComponentNode)) return null;
+  const anchor = findAnchor(component.parent.children, component.index);
 
-    if (anchor) {
-        return anchor;
-    } else {
-        return findComponentAnchor(component.parent)
-    }
+  if (anchor) {
+    return anchor;
+  } else {
+    return findComponentAnchor(component.parent);
+  }
 }
 
 export function refreshComponentAnchor(component) {
-    const anchor = findAnchor(component.parent.children, component.index);
+  const anchor = findAnchor(component.parent.children, component.index);
 
-    if (anchor) {
-        component.anchor = anchor
-    } else {
-       component.anchor = findComponentAnchor(component.parent)
-    }
+  if (anchor) {
+    component.anchor = anchor;
+  } else {
+    component.anchor = findComponentAnchor(component.parent);
+  }
 }

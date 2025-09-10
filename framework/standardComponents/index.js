@@ -1,5 +1,3 @@
-import Lazy from "./Lazy.js";
+import Lazy from './Lazy.js';
 
-export default {
-    Lazy
-}
+export default { Lazy };
