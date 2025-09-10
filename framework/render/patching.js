@@ -48,6 +48,7 @@ function patchText(parentNode, nextText, prevNode, prevChildren, index) {
   if (prevNode && prevNode.constructor === TextNode && prevNode.el) {
     if (prevNode.text !== nextText) {
       prevNode.el.nodeValue = nextText;
+      prevNode.text = nextText;
     }
 
     return prevNode;
