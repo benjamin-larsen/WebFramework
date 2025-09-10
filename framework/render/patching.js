@@ -44,25 +44,28 @@ function patchElement(
   }
 }
 
-function patchText(parentNode, nextNode, prevNode, prevChildren, index) {
+function patchText(parentNode, nextText, prevNode, prevChildren, index) {
   if (prevNode && prevNode.constructor === TextNode && prevNode.el) {
-    nextNode.el = prevNode.el;
-
-    if (prevNode.text !== nextNode.text) {
-      nextNode.el.nodeValue = nextNode.text;
+    if (prevNode.text !== nextText) {
+      prevNode.el.nodeValue = nextText;
     }
+
+    return prevNode;
   } else {
     if (prevNode) {
       prevNode.unmount();
     }
 
-    const el = document.createTextNode(nextNode.text);
+    const nextNode = new TextNode(nextText)
+    const el = document.createTextNode(nextText);
     nextNode.el = el;
 
     parentNode.el.insertBefore(
       el,
       findAnchor(prevChildren, index) || parentNode.anchor || null
     );
+
+    return nextNode;
   }
 }
 
@@ -178,6 +181,11 @@ export function patch(parentNode, prevChildren, nextChildren, level) {
     const nextNode = nextChildren[index];
     const prevNode = prevChildren[index];
 
+    if (typeof nextNode === 'string') {
+      nextChildren[index] = patchText(parentNode, nextNode, prevNode, prevChildren, index);
+      continue;
+    }
+
     if (nextNode === null || typeof nextNode !== 'object') {
       if (prevNode) prevNode.unmount();
       continue;
@@ -185,8 +193,6 @@ export function patch(parentNode, prevChildren, nextChildren, level) {
 
     if (nextNode.constructor === ElementNode) {
       patchElement(parentNode, nextNode, prevNode, prevChildren, index, level);
-    } else if (nextNode.constructor === TextNode) {
-      patchText(parentNode, nextNode, prevNode, prevChildren, index);
     } else if (nextNode.constructor === ComponentNode) {
       patchComponent(parentNode, nextNode, prevNode, index, level);
     }

@@ -4,7 +4,7 @@ import {
     head,
     body,
     reactive, ref,
-    e, t, c, v
+    e, c, v
 } from './framework/index.js'
 
 import { renderNode } from './framework/render/index.js'

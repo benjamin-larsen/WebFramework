@@ -102,13 +102,6 @@ export class TextNode {
   }
 }
 
-// Create Text Virtual Node
-export function createTextNode(text) {
-  return new TextNode(text);
-}
-
-export const t = createTextNode;
-
 export class ComponentNode {
   constructor(component, properties) {
     if (component[REACTIVE_FLAGS.IS_REACTIVE]) {
@@ -185,7 +178,6 @@ export function createVNode(type, ...data) {
         return new ComponentNode(standardComponents[type], data[0] || {});
       }
 
-      let children = [];
       let properties = {};
 
       if (
@@ -197,15 +189,7 @@ export function createVNode(type, ...data) {
         data = data.slice(1);
       }
 
-      for (const child of data) {
-        if (typeof child === 'string') {
-          children.push(new TextNode(child));
-        } else {
-          children.push(child);
-        }
-      }
-
-      return new ElementNode(type, properties, children);
+      return new ElementNode(type, properties, data);
     }
 
     case 'object': {

@@ -4,11 +4,9 @@ export {
   head,
   body,
   e,
-  t,
   c,
   v,
   createElement,
-  createTextNode,
   createComponent,
   createVNode
 } from './vnode.js';
