@@ -67,9 +67,7 @@ export function renderNode(node, force) {
 
   node.instance.setStatus(INSTANCE_STATES.SYNCED);
   node.instance.callHook(
-    isMounted
-      ? 'onMounted'
-      : 'onUpdated',
+    isMounted ? 'onMounted' : 'onUpdated',
     node.properties || {}
   );
 }

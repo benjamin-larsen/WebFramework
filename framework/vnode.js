@@ -228,4 +228,4 @@ export const containerNodes = [
   FragmentNode,
   ElementNode,
   ComponentNode
-]
+];

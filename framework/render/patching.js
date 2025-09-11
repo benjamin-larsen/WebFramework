@@ -1,7 +1,12 @@
 import { renderNode } from './index.js';
 import { findAnchor, refreshComponentAnchor } from '../anchor.js';
 import { patchProps } from './patchProps.js';
-import { ComponentNode, ElementNode, FragmentNode, TextNode } from '../vnode.js';
+import {
+  ComponentNode,
+  ElementNode,
+  FragmentNode,
+  TextNode
+} from '../vnode.js';
 import { ComponentInstance } from '../component.js';
 import { shallowCompareObj } from '../helpers.js';
 import { INSTANCE_STATES } from '../constants.js';
@@ -16,7 +21,7 @@ function patchFragment(parentNode, nextArray, prevNode, index, level) {
     patch(prevNode, prevNode.children, nextArray, level);
     return prevNode;
   } else {
-    const nextNode = new FragmentNode()
+    const nextNode = new FragmentNode();
     nextNode.el = parentNode.el;
     nextNode.parent = parentNode;
     nextNode.index = index;
@@ -36,11 +41,7 @@ function patchElement(
   index,
   level
 ) {
-  if (
-    prevNode &&
-    prevNode.el &&
-    prevNode.tag === nextNode.tag
-  ) {
+  if (prevNode && prevNode.el && prevNode.tag === nextNode.tag) {
     if (prevNode.properties === nextNode.properties) {
       throw Error('Fatal Error: Properties was re-used.');
     }
@@ -138,7 +139,7 @@ function getNodeType(node) {
   if (typeof node === 'string') return TextNode;
   if (typeof node !== 'object') return null;
   if (Array.isArray(node)) return FragmentNode;
-  
+
   return node.constructor;
 }
 
@@ -150,11 +151,17 @@ function evalDiff(prevNode, nextNode) {
   let prevKey = null;
   let nextKey = null;
 
-  if ((prevType === ComponentNode || prevType === ElementNode) && prevNode.properties.key) {
+  if (
+    (prevType === ComponentNode || prevType === ElementNode) &&
+    prevNode.properties.key
+  ) {
     prevKey = prevNode.properties.key;
   }
 
-  if ((nextType === ComponentNode || nextType === ElementNode) && nextNode.properties.key) {
+  if (
+    (nextType === ComponentNode || nextType === ElementNode) &&
+    nextNode.properties.key
+  ) {
     nextKey = nextNode.properties.key;
   }
 
@@ -168,11 +175,7 @@ function evalDiff(prevNode, nextNode) {
     }
   }
 
-  return {
-    isSame,
-    prevKey,
-    nextKey
-  }
+  return { isSame, prevKey, nextKey };
 }
 
 export function patch(parentNode, prevChildren, nextChildren, level) {
@@ -183,9 +186,14 @@ export function patch(parentNode, prevChildren, nextChildren, level) {
     const node = nextChildren[index];
     if (node === null || typeof node !== 'object') continue;
 
-    if ((node.constructor === ElementNode || node.constructor === ComponentNode) && node.properties.key) {
-      if (keyMap.has(node.properties.key)) throw Error(`Duplicate key: ${node.properties.key}`)
-      keyMap.set(node.properties.key, index)
+    if (
+      (node.constructor === ElementNode ||
+        node.constructor === ComponentNode) &&
+      node.properties.key
+    ) {
+      if (keyMap.has(node.properties.key))
+        throw Error(`Duplicate key: ${node.properties.key}`);
+      keyMap.set(node.properties.key, index);
     }
   }
 
@@ -197,26 +205,26 @@ export function patch(parentNode, prevChildren, nextChildren, level) {
 
     if (!diffData.isSame) {
       if (diffData.prevKey) {
-        const result = keyMap.get(diffData.prevKey)
+        const result = keyMap.get(diffData.prevKey);
 
         if (result !== undefined) {
           if (result > index) {
-            parentNode.children[result] = prevNode
-            parentNode.children[index] = null
+            parentNode.children[result] = prevNode;
+            parentNode.children[index] = null;
 
             parentNode.el.insertBefore(
               prevNode.el,
-              findAnchor(parentNode.children, result) || parentNode.anchor || null
-            )
+              findAnchor(parentNode.children, result) ||
+                parentNode.anchor ||
+                null
+            );
           }
         } else {
-          prevNode.unmount()
+          prevNode.unmount();
           parentNode.children[index] = null;
         }
-
-        console.log("Match Prev-Next", result)
       } else if (prevNode) {
-        prevNode.unmount()
+        prevNode.unmount();
         parentNode.children[index] = null;
       }
 
@@ -224,7 +232,7 @@ export function patch(parentNode, prevChildren, nextChildren, level) {
       prevNode = null;
 
       if (diffData.nextKey) {
-        const result = parentNode.keyMap.get(diffData.nextKey)
+        const result = parentNode.keyMap.get(diffData.nextKey);
 
         if (result !== undefined) {
           if (result < index) {
@@ -232,13 +240,13 @@ export function patch(parentNode, prevChildren, nextChildren, level) {
             continue;
           }
 
-          prevNode = parentNode.children[result]
-          parentNode.children[result] = null
+          prevNode = parentNode.children[result];
+          parentNode.children[result] = null;
 
           parentNode.el.insertBefore(
             prevNode.el,
             findAnchor(parentNode.children, index) || parentNode.anchor || null
-          )
+          );
         }
       }
     }
@@ -255,7 +263,13 @@ export function patch(parentNode, prevChildren, nextChildren, level) {
     }
 
     if (Array.isArray(nextNode)) {
-      parentNode.children[index] = patchFragment(parentNode, nextNode, prevNode, index, level);
+      parentNode.children[index] = patchFragment(
+        parentNode,
+        nextNode,
+        prevNode,
+        index,
+        level
+      );
       continue;
     }
 
@@ -266,9 +280,22 @@ export function patch(parentNode, prevChildren, nextChildren, level) {
     }
 
     if (nextNode.constructor === ElementNode) {
-      parentNode.children[index] = patchElement(parentNode, nextNode, prevNode, prevChildren, index, level);
+      parentNode.children[index] = patchElement(
+        parentNode,
+        nextNode,
+        prevNode,
+        prevChildren,
+        index,
+        level
+      );
     } else if (nextNode.constructor === ComponentNode) {
-      parentNode.children[index] = patchComponent(parentNode, nextNode, prevNode, index, level);
+      parentNode.children[index] = patchComponent(
+        parentNode,
+        nextNode,
+        prevNode,
+        index,
+        level
+      );
     }
   }
 
