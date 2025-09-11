@@ -7,6 +7,7 @@ export class RootContainer {
   constructor(component, el) {
     this.component = component;
     this.children = [];
+    this.keyMap = new Map();
 
     this.el = el;
 
@@ -26,29 +27,18 @@ export function root(component, queryOrElement) {
   return new RootContainer(component, element);
 }
 
-export class HeadContainer extends RootContainer {
-  constructor(component) {
-    super(component, document.head);
-  }
-}
-
 export function head(component) {
-  return new HeadContainer(component);
-}
-
-export class BodyContainer extends RootContainer {
-  constructor(component) {
-    super(component, document.body);
-  }
+  return new RootContainer(component, document.head);
 }
 
 export function body(component) {
-  return new BodyContainer(component);
+  return new RootContainer(component, document.body);
 }
 
 export class FragmentNode {
   constructor() {
     this.children = [];
+    this.keyMap = new Map();
 
     this.index = null;
     this.parent = null;
@@ -75,6 +65,7 @@ export class ElementNode {
     this.tag = tag;
     this.properties = properties;
     this.children = children;
+    this.keyMap = new Map();
 
     this.el = null;
   }
@@ -154,6 +145,7 @@ export class ComponentNode {
     }
 
     this.children = [];
+    this.keyMap = new Map();
     this.parent = null;
 
     this.index = null;
@@ -230,3 +222,10 @@ export function createVNode(type, ...data) {
 }
 
 export const v = createVNode;
+
+export const containerNodes = [
+  RootContainer,
+  FragmentNode,
+  ElementNode,
+  ComponentNode
+]

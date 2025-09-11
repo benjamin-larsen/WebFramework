@@ -7,7 +7,7 @@ import { shallowCompareObj } from '../helpers.js';
 import { INSTANCE_STATES } from '../constants.js';
 
 function patchFragment(parentNode, nextArray, prevNode, index, level) {
-  if (prevNode && prevNode.constructor === FragmentNode && prevNode.el) {
+  if (prevNode && prevNode.el) {
     prevNode.el = parentNode.el;
     prevNode.parent = parentNode;
     prevNode.index = index;
@@ -16,10 +16,6 @@ function patchFragment(parentNode, nextArray, prevNode, index, level) {
     patch(prevNode, prevNode.children, nextArray, level);
     return prevNode;
   } else {
-    if (prevNode) {
-      prevNode.unmount();
-    }
-
     const nextNode = new FragmentNode()
     nextNode.el = parentNode.el;
     nextNode.parent = parentNode;
@@ -42,7 +38,6 @@ function patchElement(
 ) {
   if (
     prevNode &&
-    prevNode.constructor === ElementNode &&
     prevNode.el &&
     prevNode.tag === nextNode.tag
   ) {
@@ -53,11 +48,9 @@ function patchElement(
     nextNode.el = prevNode.el;
     patch(nextNode, prevNode.children, nextNode.children, level);
     patchProps(prevNode, nextNode);
-  } else {
-    if (prevNode) {
-      prevNode.unmount();
-    }
 
+    return nextNode;
+  } else {
     const el = document.createElement(nextNode.tag);
     nextNode.el = el;
 
@@ -66,13 +59,15 @@ function patchElement(
 
     parentNode.el.insertBefore(
       el,
-      findAnchor(prevChildren, index) || parentNode.anchor || null
+      findAnchor(parentNode.children, index) || parentNode.anchor || null
     );
+
+    return nextNode;
   }
 }
 
 function patchText(parentNode, nextText, prevNode, prevChildren, index) {
-  if (prevNode && prevNode.constructor === TextNode && prevNode.el) {
+  if (prevNode && prevNode.el) {
     if (prevNode.text !== nextText) {
       prevNode.el.nodeValue = nextText;
       prevNode.text = nextText;
@@ -80,17 +75,13 @@ function patchText(parentNode, nextText, prevNode, prevChildren, index) {
 
     return prevNode;
   } else {
-    if (prevNode) {
-      prevNode.unmount();
-    }
-
     const nextNode = new TextNode(nextText);
     const el = document.createTextNode(nextText);
     nextNode.el = el;
 
     parentNode.el.insertBefore(
       el,
-      findAnchor(prevChildren, index) || parentNode.anchor || null
+      findAnchor(parentNode.children, index) || parentNode.anchor || null
     );
 
     return nextNode;
@@ -98,24 +89,19 @@ function patchText(parentNode, nextText, prevNode, prevChildren, index) {
 }
 
 function patchComponent(parentNode, nextNode, prevNode, index, level) {
-  const isSameComponent =
-    prevNode &&
-    prevNode.constructor === ComponentNode &&
-    prevNode.component === nextNode.component;
-
-  if (isSameComponent && prevNode.instance) {
+  if (prevNode && prevNode.instance) {
     nextNode.instance = prevNode.instance;
     nextNode.instance.vnode = nextNode;
   } else {
     nextNode.instance = new ComponentInstance(nextNode, level + 1);
   }
 
-  if (isSameComponent && prevNode.properties === nextNode.properties) {
+  if (prevNode && prevNode.properties === nextNode.properties) {
     throw Error('Fatal Error: Properties was re-used.');
   }
 
   if (
-    isSameComponent &&
+    prevNode &&
     prevNode.el &&
     shallowCompareObj(prevNode.properties, nextNode.properties)
   ) {
@@ -123,12 +109,12 @@ function patchComponent(parentNode, nextNode, prevNode, index, level) {
     nextNode.children = prevNode.children;
     nextNode.index = index;
     nextNode.parent = parentNode;
+
+    return nextNode;
   } else {
     // Set children as it's used for patching in rendering
-    if (isSameComponent) {
+    if (prevNode) {
       nextNode.children = prevNode.children;
-    } else if (prevNode) {
-      prevNode.unmount();
     }
 
     nextNode.index = index;
@@ -142,80 +128,123 @@ function patchComponent(parentNode, nextNode, prevNode, index, level) {
       nextNode.properties
     );
     renderNode(nextNode, true);
+
+    return nextNode;
   }
 }
 
-// Has responsibility for moving/removing keyed children.
-// Handle case when nextChildren is bigger than prevChildren (perhaps fill with null)
-function patchKeyed(prevChildren, nextChildren) {
-  const tobeRemoved = [];
-  const tobeMoved = [];
+function getNodeType(node) {
+  if (node === null) return null;
+  if (typeof node === 'string') return TextNode;
+  if (typeof node !== 'object') return null;
+  if (Array.isArray(node)) return FragmentNode;
+  
+  return node.constructor;
+}
 
-  const nextKeyed = new Map();
+function evalDiff(prevNode, nextNode) {
+  const prevType = getNodeType(prevNode);
+  const nextType = getNodeType(nextNode);
 
-  for (var index = 0; index < nextChildren.length; index++) {
-    const nextNode = nextChildren[index];
-    if (
-      !nextNode ||
-      (nextNode.constructor !== ElementNode &&
-        nextNode.constructor !== ComponentNode)
-    )
-      continue;
-    const key =
-      typeof nextNode.properties.key === 'string'
-        ? nextNode.properties.key
-        : null;
+  let isSame = false;
+  let prevKey = null;
+  let nextKey = null;
 
-    if (key) {
-      if (nextKeyed.has(key)) throw Error(`Duplicate key: ${key}`);
-      nextKeyed.set(key, index);
+  if ((prevType === ComponentNode || prevType === ElementNode) && prevNode.properties.key) {
+    prevKey = prevNode.properties.key;
+  }
+
+  if ((nextType === ComponentNode || nextType === ElementNode) && nextNode.properties.key) {
+    nextKey = nextNode.properties.key;
+  }
+
+  if (prevType === nextType && prevKey === nextKey) {
+    if (prevType === ComponentNode) {
+      isSame = prevNode.component === nextNode.component;
+    } else if (prevType === ElementNode) {
+      isSame = prevNode.tag === nextNode.tag;
+    } else {
+      isSame = true;
     }
   }
 
-  for (index = 0; index < prevChildren.length; index++) {
-    const prevNode = prevChildren[index];
-    if (
-      !prevNode ||
-      (prevNode.constructor !== ElementNode &&
-        prevNode.constructor !== ComponentNode)
-    )
-      continue;
-    const key =
-      typeof prevNode.properties.key === 'string'
-        ? prevNode.properties.key
-        : null;
-
-    if (key) {
-      // check else if not same type
-      if (!nextKeyed.has(key)) {
-        tobeRemoved.push(index);
-      } else if (nextKeyed.get(key) !== index) {
-        tobeMoved.push({ key, index });
-      }
-    }
+  return {
+    isSame,
+    prevKey,
+    nextKey
   }
-
-  // Remove Old Keyed Children
-  for (index = tobeRemoved.length - 1; index >= 0; index--) {
-    const nodeIndex = tobeRemoved[index];
-    const node = prevChildren[nodeIndex];
-    node.unmount();
-
-    prevChildren.splice(nodeIndex, 1);
-  }
-
-  // Move Old Keyed Children to New Index
 }
 
 export function patch(parentNode, prevChildren, nextChildren, level) {
-  patchKeyed(prevChildren, nextChildren);
+  // Compute Key Map
+  const keyMap = new Map();
+
+  for (var index = 0; index < nextChildren.length; index++) {
+    const node = nextChildren[index];
+    if (node === null || typeof node !== 'object') continue;
+
+    if (node.constructor === ElementNode || node.constructor === ComponentNode && node.properties.key) {
+      if (keyMap.has(node.properties.key)) throw Error(`Duplicate key: ${node.properties.key}`)
+      keyMap.set(node.properties.key, index)
+    }
+  }
 
   for (var index = 0; index < nextChildren.length; index++) {
     const nextNode = nextChildren[index];
-    const prevNode = prevChildren[index];
+    let prevNode = prevChildren[index];
+
+    const diffData = evalDiff(prevNode, nextNode);
+
+    if (!diffData.isSame) {
+      if (diffData.prevKey) {
+        const result = keyMap.get(diffData.prevKey)
+
+        if (result !== undefined) {
+          if (result > index) {
+            parentNode.children[result] = prevNode
+            parentNode.children[index] = null
+
+            parentNode.el.insertBefore(
+              prevNode.el,
+              findAnchor(parentNode.children, result) || parentNode.anchor || null
+            )
+          }
+        } else {
+          prevNode.unmount()
+          parentNode.children[index] = null;
+        }
+
+        console.log("Match Prev-Next", result)
+      } else if (prevNode) {
+        prevNode.unmount()
+        parentNode.children[index] = null;
+      }
+
+      // Prev Node was either moved or unmounted. Do not re-use.
+      prevNode = null;
+
+      if (diffData.nextKey) {
+        const result = parentNode.keyMap.get(diffData.nextKey)
+
+        if (result !== undefined) {
+          if (result < index) {
+            // Should logically already be handled
+            continue;
+          }
+
+          prevNode = parentNode.children[result]
+          parentNode.children[result] = null
+
+          parentNode.el.insertBefore(
+            prevNode.el,
+            findAnchor(parentNode.children, index) || parentNode.anchor || null
+          )
+        }
+      }
+    }
 
     if (typeof nextNode === 'string') {
-      nextChildren[index] = patchText(
+      parentNode.children[index] = patchText(
         parentNode,
         nextNode,
         prevNode,
@@ -226,21 +255,24 @@ export function patch(parentNode, prevChildren, nextChildren, level) {
     }
 
     if (Array.isArray(nextNode)) {
-      nextChildren[index] = patchFragment(parentNode, nextNode, prevNode, index, level);
+      parentNode.children[index] = patchFragment(parentNode, nextNode, prevNode, index, level);
       continue;
     }
 
     if (nextNode === null || typeof nextNode !== 'object') {
       if (prevNode) prevNode.unmount();
+      parentNode.children[index] = null;
       continue;
     }
 
     if (nextNode.constructor === ElementNode) {
-      patchElement(parentNode, nextNode, prevNode, prevChildren, index, level);
+      parentNode.children[index] = patchElement(parentNode, nextNode, prevNode, prevChildren, index, level);
     } else if (nextNode.constructor === ComponentNode) {
-      patchComponent(parentNode, nextNode, prevNode, index, level);
+      parentNode.children[index] = patchComponent(parentNode, nextNode, prevNode, index, level);
     }
   }
+
+  parentNode.keyMap = keyMap;
 
   // index should inheritely be set to nextChildren.length according to the previous loop
   for (index = nextChildren.length; index < prevChildren.length; index++) {
@@ -249,7 +281,5 @@ export function patch(parentNode, prevChildren, nextChildren, level) {
     if (item) item.unmount();
   }
 
-  parentNode.children = nextChildren;
-
-  // add functionality to remove unused old items, without confusing keyed
+  parentNode.children.length = nextChildren.length;
 }
