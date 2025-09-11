@@ -183,7 +183,7 @@ export function patch(parentNode, prevChildren, nextChildren, level) {
     const node = nextChildren[index];
     if (node === null || typeof node !== 'object') continue;
 
-    if (node.constructor === ElementNode || node.constructor === ComponentNode && node.properties.key) {
+    if ((node.constructor === ElementNode || node.constructor === ComponentNode) && node.properties.key) {
       if (keyMap.has(node.properties.key)) throw Error(`Duplicate key: ${node.properties.key}`)
       keyMap.set(node.properties.key, index)
     }
