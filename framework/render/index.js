@@ -50,8 +50,6 @@ export function renderNode(node, force) {
     refreshComponentAnchor(node);
   }
 
-  const prevChildren = node.children;
-
   const nextChildren = withTracking(
     node.instance.subscriber,
     node.component.render.bind(node.instance.public, node.properties)
@@ -61,7 +59,7 @@ export function renderNode(node, force) {
     throw Error('Render function must return a Fragment.');
   }
 
-  patch(node, prevChildren, nextChildren, node.instance.level);
+  patch(node, nextChildren, node.instance.level);
 
   const isMounted = node.instance.status === INSTANCE_STATES.BEFORE_MOUNT;
 

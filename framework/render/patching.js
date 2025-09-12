@@ -18,7 +18,7 @@ function patchFragment(parentNode, nextArray, prevNode, index, level) {
     prevNode.index = index;
 
     refreshComponentAnchor(prevNode);
-    patch(prevNode, prevNode.children, nextArray, level);
+    patch(prevNode, nextArray, level);
     return prevNode;
   } else {
     const nextNode = new FragmentNode();
@@ -27,7 +27,7 @@ function patchFragment(parentNode, nextArray, prevNode, index, level) {
     nextNode.index = index;
 
     refreshComponentAnchor(nextNode);
-    patch(nextNode, [], nextArray, level);
+    mount(nextNode, nextArray, level);
 
     return nextNode;
   }
@@ -37,7 +37,6 @@ function patchElement(
   parentNode,
   nextNode,
   prevNode,
-  prevChildren,
   index,
   level
 ) {
@@ -46,16 +45,19 @@ function patchElement(
       throw Error('Fatal Error: Properties was re-used.');
     }
 
-    nextNode.el = prevNode.el;
-    patch(nextNode, prevNode.children, nextNode.children, level);
+    const nextChildren = nextNode.children;
+
+    patch(prevNode, nextChildren, level);
     patchProps(prevNode, nextNode);
 
-    return nextNode;
+    prevNode.properties = nextNode.properties;
+
+    return prevNode;
   } else {
     const el = document.createElement(nextNode.tag);
     nextNode.el = el;
 
-    patch(nextNode, [], nextNode.children, level);
+    mount(nextNode, nextNode.children, level);
     patchProps(null, nextNode);
 
     parentNode.el.insertBefore(
@@ -67,7 +69,7 @@ function patchElement(
   }
 }
 
-function patchText(parentNode, nextText, prevNode, prevChildren, index) {
+function patchText(parentNode, nextText, prevNode, index) {
   if (prevNode && prevNode.el) {
     if (prevNode.text !== nextText) {
       prevNode.el.nodeValue = nextText;
@@ -178,7 +180,7 @@ function evalDiff(prevNode, nextNode) {
   return { isSame, prevKey, nextKey };
 }
 
-export function patch(parentNode, prevChildren, nextChildren, level) {
+function mount(parentNode, nextChildren, level) {
   // Compute Key Map
   const keyMap = new Map();
 
@@ -199,7 +201,78 @@ export function patch(parentNode, prevChildren, nextChildren, level) {
 
   for (var index = 0; index < nextChildren.length; index++) {
     const nextNode = nextChildren[index];
-    let prevNode = prevChildren[index];
+
+    if (typeof nextNode === 'string') {
+      parentNode.children[index] = patchText(
+        parentNode,
+        nextNode,
+        null,
+        index
+      );
+      continue;
+    }
+
+    if (Array.isArray(nextNode)) {
+      parentNode.children[index] = patchFragment(
+        parentNode,
+        nextNode,
+        null,
+        index,
+        level
+      );
+      continue;
+    }
+
+    if (nextNode === null || typeof nextNode !== 'object') {
+      parentNode.children[index] = null;
+      continue;
+    }
+
+    if (nextNode.constructor === ElementNode) {
+      parentNode.children[index] = patchElement(
+        parentNode,
+        nextNode,
+        null,
+        index,
+        level
+      );
+    } else if (nextNode.constructor === ComponentNode) {
+      parentNode.children[index] = patchComponent(
+        parentNode,
+        nextNode,
+        null,
+        index,
+        level
+      );
+    }
+  }
+
+  parentNode.keyMap = keyMap;
+}
+
+export function patch(parentNode, nextChildren, level) {
+  if (parentNode.children.length === 0) return mount(parentNode, nextChildren, level);
+  // Compute Key Map
+  const keyMap = new Map();
+
+  for (var index = 0; index < nextChildren.length; index++) {
+    const node = nextChildren[index];
+    if (node === null || typeof node !== 'object') continue;
+
+    if (
+      (node.constructor === ElementNode ||
+        node.constructor === ComponentNode) &&
+      node.properties.key
+    ) {
+      if (keyMap.has(node.properties.key))
+        throw Error(`Duplicate key: ${node.properties.key}`);
+      keyMap.set(node.properties.key, index);
+    }
+  }
+
+  for (var index = 0; index < nextChildren.length; index++) {
+    const nextNode = nextChildren[index];
+    let prevNode = parentNode.children[index];
 
     const diffData = evalDiff(prevNode, nextNode);
 
@@ -212,6 +285,7 @@ export function patch(parentNode, prevChildren, nextChildren, level) {
             parentNode.children[result] = prevNode;
             parentNode.children[index] = null;
 
+            // Check if this is really nesscary
             parentNode.el.insertBefore(
               prevNode.el,
               findAnchor(parentNode.children, result) ||
@@ -243,6 +317,7 @@ export function patch(parentNode, prevChildren, nextChildren, level) {
           prevNode = parentNode.children[result];
           parentNode.children[result] = null;
 
+          // Check if this is really nesscary
           parentNode.el.insertBefore(
             prevNode.el,
             findAnchor(parentNode.children, index) || parentNode.anchor || null
@@ -256,7 +331,6 @@ export function patch(parentNode, prevChildren, nextChildren, level) {
         parentNode,
         nextNode,
         prevNode,
-        prevChildren,
         index
       );
       continue;
@@ -284,7 +358,6 @@ export function patch(parentNode, prevChildren, nextChildren, level) {
         parentNode,
         nextNode,
         prevNode,
-        prevChildren,
         index,
         level
       );
@@ -302,8 +375,8 @@ export function patch(parentNode, prevChildren, nextChildren, level) {
   parentNode.keyMap = keyMap;
 
   // index should inheritely be set to nextChildren.length according to the previous loop
-  for (index = nextChildren.length; index < prevChildren.length; index++) {
-    const item = prevChildren[index];
+  for (index = nextChildren.length; index < parentNode.children.length; index++) {
+    const item = parentNode.children[index];
 
     if (item) item.unmount();
   }
