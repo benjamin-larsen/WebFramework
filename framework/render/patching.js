@@ -47,9 +47,13 @@ function patchElement(
 
     const nextChildren = nextNode.children;
 
+    // So that patchProps can access .el, will need to reform the way that this is done.
+    nextNode.el = prevNode.el;
+
     patch(prevNode, nextChildren, level);
     patchProps(prevNode, nextNode);
 
+    // After done patching props, set prev properties to new, will need to reform this.
     prevNode.properties = nextNode.properties;
 
     return prevNode;
