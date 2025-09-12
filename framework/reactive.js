@@ -51,7 +51,27 @@ const reactiveHandler = {
   }
 };
 
+function canReact(target) {
+  if (target === null || typeof target !== 'object') return false;
+
+  switch (target.constructor) {
+    case Object:
+    case Array:
+    case Map:
+    case Set:
+    case WeakMap:
+    case WeakSet: {
+      return true;
+    }
+
+    default: {
+      return false;
+    }
+  }
+}
+
 export function reactive(target) {
+  if (!canReact(target)) return target;
   if (target[REACTIVE_FLAGS.IS_REACTIVE]) return target;
   if (reactiveMap.has(target)) return reactiveMap.get(target);
   const proxy = new Proxy(target, reactiveHandler);
