@@ -53,25 +53,28 @@ function createInvoker(func, node) {
 
 function patchEvent(prevNode, nextNode, propName, listenerFn) {
   const eventName = propName[2].toLowerCase() + propName.substring(3);
-  const hasPrevInvoker = prevNode && prevNode.properties[propName];
+  const hasPrevInvoker = prevNode && prevNode.eventInvokers && prevNode.eventInvokers[eventName];
 
   if (typeof listenerFn !== 'function') {
     if (hasPrevInvoker && prevNode.el) {
       prevNode.el.removeEventListener(eventName, prevNode.properties[propName]);
+      delete prevNode.eventInvokers[eventName]
     }
 
     return;
   }
 
+  const invokerMap = nextNode.eventInvokers || (nextNode.eventInvokers = {});
+
   if (hasPrevInvoker) {
-    const invoker = prevNode.properties[propName];
-    nextNode.properties[propName] = invoker;
+    const invoker = prevNode.eventInvokers[eventName];
+    invokerMap[eventName] = invoker;
 
     invoker.func = listenerFn;
     invoker.node = nextNode;
   } else {
     const invoker = createInvoker(listenerFn, nextNode);
-    nextNode.properties[propName] = invoker;
+    invokerMap[eventName] = invoker;
 
     nextNode.el.addEventListener(eventName, invoker);
   }
@@ -140,7 +143,7 @@ export function patchProp(prevNode, nextNode, prop, value) {
     if (prevNode && isRef(prevNode.properties.ref)) {
       if (prevNode.properties.ref === value) return;
 
-      prevNode.properties.ref(null);
+      prevNode.properties.ref.value = null;
     }
 
     if (isRef(value)) {
@@ -148,10 +151,6 @@ export function patchProp(prevNode, nextNode, prop, value) {
     }
   } else if (prop === 'class') {
     patchClassName(prevNode, nextNode, value);
-  } else if (prop === 'value') {
-    if (!prevNode || !prevNode.el || prevNode.el.value !== value) {
-      nextNode.el.value = value;
-    }
   } else {
     patchAttribute(prevNode, nextNode, prop, value);
   }
@@ -159,11 +158,6 @@ export function patchProp(prevNode, nextNode, prop, value) {
 
 export function patchProps(prevNode, nextNode) {
   if (prevNode && prevNode.properties === nextNode.properties) return;
-  if (nextNode.properties === EMPTY_PROPS) return;
-
-  if (Object.isFrozen(nextNode.properties)) {
-    throw Error('Properties of Next Node is frozen, likely re-used object.');
-  }
 
   for (const prop in nextNode.properties) {
     const value = nextNode.properties[prop];
@@ -182,6 +176,4 @@ export function patchProps(prevNode, nextNode) {
       patchProp(prevNode, nextNode, prop, null);
     }
   }
-
-  Object.freeze(nextNode.properties);
 }

@@ -136,7 +136,7 @@ export class ComponentNode {
       }
     }
 
-    this.properties = properties ? Object.freeze(properties) : EMPTY_PROPS;
+    this.properties = properties ? properties : EMPTY_PROPS;
 
     if (Array.isArray(this.properties.directives)) {
       console.warn(
