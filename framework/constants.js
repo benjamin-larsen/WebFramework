@@ -17,3 +17,5 @@ export const REACTIVE_FLAGS = {
   IS_REF: Symbol('is_ref'),
   REF_VALUE: Symbol('ref_value')
 };
+
+export const EMPTY_PROPS = Object.freeze({})

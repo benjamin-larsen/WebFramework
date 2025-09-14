@@ -1,4 +1,6 @@
 export function shallowCompareObj(objA, objB) {
+  if (objA === objB) return true;
+
   const keys = Object.keys(objA);
 
   if (keys.length !== Object.keys(objB).length) return false;

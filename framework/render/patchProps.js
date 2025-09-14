@@ -158,6 +158,8 @@ export function patchProp(prevNode, nextNode, prop, value) {
 }
 
 export function patchProps(prevNode, nextNode) {
+  if (prevNode && prevNode.properties === nextNode.properties) return;
+
   if (Object.isFrozen(nextNode.properties)) {
     throw Error('Properties of Next Node is frozen, likely re-used object.');
   }

@@ -1,5 +1,5 @@
 import { ComponentInstance } from './component.js';
-import { REACTIVE_FLAGS } from './constants.js';
+import { REACTIVE_FLAGS, EMPTY_PROPS } from './constants.js';
 import standardComponents from './standardComponents/index.js';
 import { isRef } from './reactive.js';
 
@@ -63,7 +63,7 @@ export class FragmentNode {
 export class ElementNode {
   constructor(tag, properties, children) {
     this.tag = tag;
-    this.properties = properties;
+    this.properties = properties || EMPTY_PROPS;
     this.children = children;
     this.keyMap = new Map();
 
@@ -136,7 +136,7 @@ export class ComponentNode {
       }
     }
 
-    this.properties = Object.freeze(properties);
+    this.properties = properties ? Object.freeze(properties) : EMPTY_PROPS;
 
     if (Array.isArray(this.properties.directives)) {
       console.warn(

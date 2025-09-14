@@ -41,10 +41,6 @@ function patchElement(
   level
 ) {
   if (prevNode && prevNode.el && prevNode.tag === nextNode.tag) {
-    if (prevNode.properties === nextNode.properties) {
-      throw Error('Fatal Error: Properties was re-used.');
-    }
-
     const nextChildren = nextNode.children;
 
     // So that patchProps can access .el, will need to reform the way that this is done.
@@ -101,10 +97,6 @@ function patchComponent(parentNode, nextNode, prevNode, index, level) {
     nextNode.instance.vnode = nextNode;
   } else {
     nextNode.instance = new ComponentInstance(nextNode, level + 1);
-  }
-
-  if (prevNode && prevNode.properties === nextNode.properties) {
-    throw Error('Fatal Error: Properties was re-used.');
   }
 
   if (
