@@ -1,6 +1,5 @@
-import { RESERVED_PROPS } from '../constants.js';
+import { RESERVED_PROPS, EMPTY_PROPS } from '../constants.js';
 import { isRef } from '../reactive.js';
-import { EMPTY_PROPS } from '../constants.js';
 
 function patchClassName(prevNode, nextNode, classList) {
   let computedClass = classList || '';
