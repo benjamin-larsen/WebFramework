@@ -1,5 +1,6 @@
 import { RESERVED_PROPS } from '../constants.js';
 import { isRef } from '../reactive.js';
+import { EMPTY_PROPS } from '../constants.js';
 
 function patchClassName(prevNode, nextNode, classList) {
   let computedClass = classList || '';
@@ -159,6 +160,7 @@ export function patchProp(prevNode, nextNode, prop, value) {
 
 export function patchProps(prevNode, nextNode) {
   if (prevNode && prevNode.properties === nextNode.properties) return;
+  if (nextNode.properties === EMPTY_PROPS) return;
 
   if (Object.isFrozen(nextNode.properties)) {
     throw Error('Properties of Next Node is frozen, likely re-used object.');
