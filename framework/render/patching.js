@@ -151,14 +151,14 @@ function evalDiff(prevNode, nextNode) {
 
   if (
     (prevType === ComponentNode || prevType === ElementNode) &&
-    prevNode.properties.key
+    prevNode.properties.key !== undefined
   ) {
     prevKey = prevNode.properties.key;
   }
 
   if (
     (nextType === ComponentNode || nextType === ElementNode) &&
-    nextNode.properties.key
+    nextNode.properties.key !== undefined
   ) {
     nextKey = nextNode.properties.key;
   }
@@ -187,7 +187,7 @@ function mount(parentNode, nextChildren, level) {
     if (
       (node.constructor === ElementNode ||
         node.constructor === ComponentNode) &&
-      node.properties.key
+      node.properties.key !== undefined
     ) {
       if (keyMap.has(node.properties.key))
         throw Error(`Duplicate key: ${node.properties.key}`);
@@ -219,6 +219,7 @@ function mount(parentNode, nextChildren, level) {
       continue;
     }
 
+    // check if this is VNode rather than just object, copy on mount() as well, and check if any changes made to patch() was not made to mount()
     if (nextNode === null || typeof nextNode !== 'object') {
       parentNode.children[index] = null;
       continue;
@@ -250,6 +251,7 @@ export function patch(parentNode, nextChildren, level) {
   if (parentNode.children.length === 0) return mount(parentNode, nextChildren, level);
   // Compute Key Map
   const keyMap = new Map();
+  const unmountList = new Map();
 
   for (var index = 0; index < nextChildren.length; index++) {
     const node = nextChildren[index];
@@ -258,7 +260,7 @@ export function patch(parentNode, nextChildren, level) {
     if (
       (node.constructor === ElementNode ||
         node.constructor === ComponentNode) &&
-      node.properties.key
+      node.properties.key !== undefined
     ) {
       if (keyMap.has(node.properties.key))
         throw Error(`Duplicate key: ${node.properties.key}`);
@@ -273,69 +275,42 @@ export function patch(parentNode, nextChildren, level) {
     const diffData = evalDiff(prevNode, nextNode);
 
     if (!diffData.isSame) {
+
       if (diffData.prevKey) {
-        const result = keyMap.get(diffData.prevKey);
-
-        if (result !== undefined) {
-          if (result > index) {
-            const temp = parentNode.children[result];
-            parentNode.children[result] = prevNode;
-            parentNode.children[index] = temp;
-
-            // Check if this is really nesscary
-            parentNode.el.insertBefore(
-              prevNode.el,
-              findAnchor(parentNode.children, result) ||
-                parentNode.anchor ||
-                null
-            );
-
-            // Swap
-            parentNode.el.insertBefore(
-              temp.el,
-              findAnchor(parentNode.children, index) ||
-                parentNode.anchor ||
-                null
-            );
-          }
-        } else {
-          prevNode.unmount();
-          parentNode.children[index] = null;
-        }
+        // Stash Previous Node
+        unmountList.set(
+          diffData.prevKey,
+          prevNode
+        )
       } else if (prevNode) {
         prevNode.unmount();
-        parentNode.children[index] = null;
       }
 
       // Prev Node was either moved or unmounted. Do not re-use.
+      parentNode.children[index] = null;
       prevNode = null;
 
       if (diffData.nextKey) {
-        const result = parentNode.keyMap.get(diffData.nextKey);
+        const result = unmountList.get(diffData.nextKey) || parentNode.keyMap.get(diffData.nextKey);
 
-        if (result !== undefined) {
-          if (result < index) {
-            // Should logically already be handled
-            continue;
-          }
-
-          const temp = parentNode.children[index];
+        // for currentNode to be keyed, it must mean that it was not stashed previously
+        if (typeof result === 'number') {
           prevNode = parentNode.children[result];
-          parentNode.children[result] = temp;
+          parentNode.children[result] = null;
 
           // Check if this is really nesscary
-          parentNode.el.insertBefore(
-            prevNode.el,
+          prevNode.move(
+            parentNode,
             findAnchor(parentNode.children, index) || parentNode.anchor || null
           );
+        } else if (typeof result === 'object') {
+          unmountList.delete(diffData.nextKey)
+          prevNode = result;
 
-          // Swap
-            parentNode.el.insertBefore(
-              temp.el,
-              findAnchor(parentNode.children, result) ||
-                parentNode.anchor ||
-                null
-            );
+          prevNode.move(
+            parentNode,
+            findAnchor(parentNode.children, index) || parentNode.anchor || null
+          );
         }
       }
     }
@@ -361,6 +336,7 @@ export function patch(parentNode, nextChildren, level) {
       continue;
     }
 
+    // check if this is VNode rather than just object, copy on mount() as well, and check if any changes made to patch() was not made to mount()
     if (nextNode === null || typeof nextNode !== 'object') {
       if (prevNode) prevNode.unmount();
       parentNode.children[index] = null;
@@ -393,6 +369,10 @@ export function patch(parentNode, nextChildren, level) {
     const item = parentNode.children[index];
 
     if (item) item.unmount();
+  }
+
+  for (const [_, orphan] of unmountList) {
+    orphan.unmount()
   }
 
   parentNode.children.length = nextChildren.length;

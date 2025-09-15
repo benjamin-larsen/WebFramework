@@ -58,6 +58,12 @@ export class FragmentNode {
     this.parent = null;
     this.children = null;
   }
+
+  move(parentNode, anchor) {
+    for (const child of this.children) {
+      child.move(parentNode, anchor)
+    }
+  }
 }
 
 export class ElementNode {
@@ -94,6 +100,13 @@ export class ElementNode {
     this.el = null;
     this.children = null;
   }
+
+  move(parentNode, anchor) {
+    parentNode.el.insertBefore(
+      this.el,
+      anchor
+    );
+  }
 }
 
 // Create Element Virtual Node
@@ -115,6 +128,13 @@ export class TextNode {
 
     this.el.remove();
     this.el = null;
+  }
+
+  move(parentNode, anchor) {
+    parentNode.el.insertBefore(
+      this.el,
+      anchor
+    );
   }
 }
 
@@ -171,6 +191,12 @@ export class ComponentNode {
 
     this.instance.destroy();
     this.instance = null;
+  }
+
+  move(parentNode, anchor) {
+    for (const child of this.children) {
+      child.move(parentNode, anchor)
+    }
   }
 }
 
