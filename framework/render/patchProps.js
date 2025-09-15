@@ -46,6 +46,7 @@ function patchStyles(prevNode, nextNode, rawStyles) {
     let styleArray = [];
 
     for (const style in rawStyles) {
+      if (!rawStyles[style]) continue;
       styleArray.push(`${style}: ${rawStyles[style]}`)
     }
 
