@@ -4,6 +4,14 @@ import { isRef } from '../reactive.js';
 function patchClassName(prevNode, nextNode, classList) {
   let computedClass = classList || '';
 
+  if (classList === null || classList === undefined) {
+    if (prevNode.properties.class && prevNode.el) {
+      prevNode.el.removeAttribute("class");
+    }
+
+    return;
+  }
+
   if (Array.isArray(classList)) {
     computedClass = classList.join(' ');
   } else if (typeof classList === 'object') {
@@ -21,6 +29,34 @@ function patchClassName(prevNode, nextNode, classList) {
   if (prevNode && prevNode.properties.class === computedClass) return;
 
   nextNode.el.className = computedClass;
+}
+
+function patchStyles(prevNode, nextNode, rawStyles) {
+  let computedStyle = rawStyles || '';
+
+  if (rawStyles === null || rawStyles === undefined) {
+    if (prevNode.properties.style && prevNode.el) {
+      prevNode.el.removeAttribute("style");
+    }
+
+    return;
+  }
+
+  if (typeof rawStyles === 'object') {
+    let styleArray = [];
+
+    for (const style in rawStyles) {
+      styleArray.push(`${style}: ${rawStyles[style]}`)
+    }
+
+    computedStyle = styleArray.join(';');
+  }
+
+  nextNode.properties.style = computedStyle;
+
+  if (prevNode && prevNode.properties.style === computedStyle) return;
+
+  nextNode.el.style.cssText = computedStyle;
 }
 
 function patchAttribute(prevNode, nextNode, attr, value) {
@@ -151,6 +187,8 @@ export function patchProp(prevNode, nextNode, prop, value) {
     }
   } else if (prop === 'class') {
     patchClassName(prevNode, nextNode, value);
+  } else if (prop === 'style') {
+    patchStyles(prevNode, nextNode, value);
   } else {
     patchAttribute(prevNode, nextNode, prop, value);
   }
