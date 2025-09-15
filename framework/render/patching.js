@@ -278,13 +278,22 @@ export function patch(parentNode, nextChildren, level) {
 
         if (result !== undefined) {
           if (result > index) {
+            const temp = parentNode.children[result];
             parentNode.children[result] = prevNode;
-            parentNode.children[index] = null;
+            parentNode.children[index] = temp;
 
             // Check if this is really nesscary
             parentNode.el.insertBefore(
               prevNode.el,
               findAnchor(parentNode.children, result) ||
+                parentNode.anchor ||
+                null
+            );
+
+            // Swap
+            parentNode.el.insertBefore(
+              temp.el,
+              findAnchor(parentNode.children, index) ||
                 parentNode.anchor ||
                 null
             );
@@ -310,14 +319,23 @@ export function patch(parentNode, nextChildren, level) {
             continue;
           }
 
+          const temp = parentNode.children[index];
           prevNode = parentNode.children[result];
-          parentNode.children[result] = null;
+          parentNode.children[result] = temp;
 
           // Check if this is really nesscary
           parentNode.el.insertBefore(
             prevNode.el,
             findAnchor(parentNode.children, index) || parentNode.anchor || null
           );
+
+          // Swap
+            parentNode.el.insertBefore(
+              temp.el,
+              findAnchor(parentNode.children, result) ||
+                parentNode.anchor ||
+                null
+            );
         }
       }
     }
