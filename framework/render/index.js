@@ -1,7 +1,7 @@
 import { ComponentNode } from '../vnode.js';
 import { refreshComponentAnchor } from '../anchor.js';
 import { patch } from './patching.js';
-import { INSTANCE_STATES } from '../constants.js';
+import { INSTANCE_STATES, EMPTY_PROPS } from '../constants.js';
 import { withTracking } from '../effect.js';
 
 class RenderQueue {
@@ -52,7 +52,7 @@ export function renderNode(node, force) {
 
   const nextChildren = withTracking(
     node.instance.subscriber,
-    node.component.render.bind(node.instance.public, node.properties)
+    node.component.render.bind(node.instance.public, node.properties, node.slots || EMPTY_PROPS)
   );
 
   if (!Array.isArray(nextChildren)) {

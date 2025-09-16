@@ -102,6 +102,8 @@ function patchComponent(parentNode, nextNode, prevNode, index, level) {
   if (
     prevNode &&
     prevNode.el &&
+    !prevNode.slots && // Force render if previous has slots, may have been changed or removed
+    !nextNode.slots && // Force render if next has slots, has been added
     shallowCompareObj(prevNode.properties, nextNode.properties)
   ) {
     nextNode.el = prevNode.el;

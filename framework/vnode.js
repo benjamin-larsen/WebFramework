@@ -61,6 +61,8 @@ export class FragmentNode {
 
   move(parentNode, anchor) {
     for (const child of this.children) {
+      if (!child) continue;
+
       child.move(parentNode, anchor)
     }
   }
@@ -139,7 +141,7 @@ export class TextNode {
 }
 
 export class ComponentNode {
-  constructor(component, properties) {
+  constructor(component, properties, slots) {
     if (component[REACTIVE_FLAGS.IS_REACTIVE]) {
       this.component = component[REACTIVE_FLAGS.UNWRAP];
     } else {
@@ -162,6 +164,10 @@ export class ComponentNode {
       console.warn(
         'Directive(s) were defined in a ComponentNode, but directives are not supported for Components.'
       );
+    }
+
+    if (slots) {
+      this.slots = slots;
     }
 
     this.children = [];
@@ -195,18 +201,19 @@ export class ComponentNode {
 
   move(parentNode, anchor) {
     for (const child of this.children) {
+      if (!child) continue;
       child.move(parentNode, anchor)
     }
   }
 }
 
 // Create Component Virtual Node
-export function createComponent(component, properties) {
+export function createComponent(component, properties, slots) {
   if (typeof component === 'string' && standardComponents[component]) {
-    return new ComponentNode(standardComponents[component], properties);
+    return new ComponentNode(standardComponents[component], properties, slots);
   }
 
-  return new ComponentNode(component, properties);
+  return new ComponentNode(component, properties, slots);
 }
 
 export const c = createComponent;
@@ -218,7 +225,7 @@ export function createVNode(type, ...data) {
   switch (typeof type) {
     case 'string': {
       if (standardComponents[type]) {
-        return new ComponentNode(standardComponents[type], data[0] || {});
+        return new ComponentNode(standardComponents[type], data[0] || {}, data[1]);
       }
 
       let properties = {};
@@ -238,7 +245,7 @@ export function createVNode(type, ...data) {
     case 'object': {
       if (type === null) return null;
 
-      return new ComponentNode(type, data[0] || {});
+      return new ComponentNode(type, data[0] || {}, data[1]);
     }
 
     default: {
