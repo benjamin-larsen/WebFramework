@@ -11,6 +11,7 @@ export {
   createVNode
 } from './vnode.js';
 export { reactive, ref } from './reactive.js';
+export { withoutTracking } from './effect.js'
 
 import {
   RootContainer,
