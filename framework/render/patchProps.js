@@ -31,6 +31,14 @@ function patchClassName(prevNode, nextNode, classList) {
   nextNode.el.className = computedClass;
 }
 
+// Code from Vue (@vue/shared)
+const hyphenateRE = /\B([A-Z])/g
+
+function hyphenate(str) {
+  if (str.slice(0, 2) === "--") return str;
+  return str.replace(hyphenateRE, '-$1').toLowerCase()
+}
+
 function patchStyles(prevNode, nextNode, rawStyles) {
   let computedStyle = rawStyles || '';
 
@@ -47,7 +55,7 @@ function patchStyles(prevNode, nextNode, rawStyles) {
 
     for (const style in rawStyles) {
       if (!rawStyles[style]) continue;
-      styleArray.push(`${style}: ${rawStyles[style]}`)
+      styleArray.push(`${hyphenate(style)}: ${rawStyles[style]}`)
     }
 
     computedStyle = styleArray.join(';');

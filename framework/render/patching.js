@@ -151,14 +151,16 @@ function evalDiff(prevNode, nextNode) {
 
   if (
     (prevType === ComponentNode || prevType === ElementNode) &&
-    prevNode.properties.key !== undefined
+    prevNode.properties.key !== undefined &&
+    prevNode.properties.key !== null
   ) {
     prevKey = prevNode.properties.key;
   }
 
   if (
     (nextType === ComponentNode || nextType === ElementNode) &&
-    nextNode.properties.key !== undefined
+    nextNode.properties.key !== undefined &&
+    nextNode.properties.key !== null
   ) {
     nextKey = nextNode.properties.key;
   }
@@ -187,7 +189,8 @@ function mount(parentNode, nextChildren, level) {
     if (
       (node.constructor === ElementNode ||
         node.constructor === ComponentNode) &&
-      node.properties.key !== undefined
+      node.properties.key !== undefined &&
+      node.properties.key !== null
     ) {
       if (keyMap.has(node.properties.key))
         throw Error(`Duplicate key: ${node.properties.key}`);
@@ -260,7 +263,8 @@ export function patch(parentNode, nextChildren, level) {
     if (
       (node.constructor === ElementNode ||
         node.constructor === ComponentNode) &&
-      node.properties.key !== undefined
+      node.properties.key !== undefined &&
+      node.properties.key !== null
     ) {
       if (keyMap.has(node.properties.key))
         throw Error(`Duplicate key: ${node.properties.key}`);
