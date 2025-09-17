@@ -2,6 +2,29 @@ const targetMap = new Map();
 const effectStack = [];
 let bypassCounter = 0;
 
+let currentRoot = null; // Current Root is the Render Queue being triggered, no need to make stack as they should be done one-by-one.
+let instanceStack = []; // Stack of Instances being rendered.
+
+export function getCurrentRoot() {
+  return currentRoot;
+}
+
+export function setCurrentRoot(root) {
+  currentRoot = root;
+}
+
+export function getCurrentInstance() {
+  return instanceStack.length > 0 ? instanceStack[instanceStack.length - 1] : null;
+}
+
+export function setCurrentInstance(inst) {
+  instanceStack.push(inst)
+}
+
+export function popCurrentInstance() {
+  instanceStack.pop()
+}
+
 class Subscription {
   constructor(dep, sub) {
     this.dep = dep;

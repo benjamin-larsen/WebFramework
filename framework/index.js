@@ -11,7 +11,9 @@ export {
   createVNode
 } from './vnode.js';
 export { reactive, ref } from './reactive.js';
-export { withoutTracking } from './effect.js'
+export { withoutTracking } from './effect.js';
+export { default as Debugger } from './debug/index.js';
+export { usePlugin } from './plugins.js'
 
 import {
   RootContainer,
