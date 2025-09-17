@@ -6,6 +6,7 @@ import { isRef } from './reactive.js';
 export class RootContainer {
   constructor(component, el) {
     this.component = component;
+    this.properties = EMPTY_PROPS;
     this.children = [];
     this.keyMap = new Map();
 
