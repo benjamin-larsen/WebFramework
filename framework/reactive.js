@@ -39,7 +39,7 @@ const reactiveHandler = {
   ownKeys(target) {
     track(target);
 
-    return Object.keys(target);
+    return Object.getOwnPropertyNames(target);
   },
   deleteProperty(target, prop) {
     if (prop in target) {
