@@ -9,5 +9,5 @@ const globalPluginContext = Object.freeze({
 export function usePlugin(plugin) {
   if (plugins.has(plugin)) throw Error("Plugin already exists");
   plugins.add(plugin)
-  plugin()
+  plugin(globalPluginContext)
 }
