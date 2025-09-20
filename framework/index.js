@@ -10,7 +10,14 @@ export {
   createComponent,
   createVNode
 } from './vnode.js';
-export { reactive, shallowReactive, readonly, shallowReadonly, ref, shallowRef } from './reactive.js';
+export {
+  reactive,
+  shallowReactive,
+  readonly,
+  shallowReadonly,
+  ref,
+  shallowRef
+} from './reactive.js';
 export { withoutTracking } from './effect.js';
 export { default as Debugger } from './debug/index.js';
 export { usePlugin } from './plugins.js';
