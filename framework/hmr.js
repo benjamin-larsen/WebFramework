@@ -51,17 +51,16 @@ function rerender(instance, newComponent) {
   instance.update();
 }
 
-function shouldFullReload(instance, newComponent) {
-  const hasPrev = typeof instance.vnode.component.onCreated === 'function';
-  const hasNext = typeof newComponent.onCreated === 'function';
+function shouldFullReload(instance, newComponent, hook) {
+  const hasPrev = typeof instance.vnode.component[hook] === 'function';
+  const hasNext = typeof newComponent[hook] === 'function';
 
   if (hasPrev && !hasNext) return true;
   if (!hasPrev && hasNext) return true;
   if (!hasPrev && !hasNext) return false;
 
   if (
-    instance.vnode.component.onCreated.toString() !==
-    newComponent.onCreated.toString()
+    instance.vnode.component[hook].toString() !== newComponent[hook].toString()
   )
     return true;
 
@@ -75,7 +74,10 @@ function hotUpdate(hmrId, newComponent) {
   for (const instance of instanceSet) {
     if (!instance.vnode) continue;
 
-    if (shouldFullReload(instance, newComponent)) {
+    if (
+      shouldFullReload(instance, newComponent, 'onCreated') ||
+      shouldFullReload(instance, newComponent, 'onMounted')
+    ) {
       fullReload(instance, newComponent);
     } else {
       rerender(instance, newComponent);
