@@ -227,6 +227,10 @@ class ReactiveRef {
     this.isShallow = isShallow;
   }
 
+  get [Symbol.toStringTag]() {
+    return 'Ref';
+  }
+
   get value() {
     track(this);
 
