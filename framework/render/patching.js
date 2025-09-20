@@ -10,6 +10,7 @@ import {
 import { ComponentInstance } from '../component.js';
 import { shallowCompareObj } from '../helpers.js';
 import { INSTANCE_STATES } from '../constants.js';
+import { shallowReadonly } from '../reactive.js';
 
 function patchFragment(parentNode, nextArray, prevNode, index, level) {
   if (prevNode && prevNode.el) {
@@ -126,7 +127,7 @@ function patchComponent(parentNode, nextNode, prevNode, index, level) {
       nextNode.instance.status === INSTANCE_STATES.BEFORE_MOUNT
         ? 'beforeMount'
         : 'beforeUpdate',
-      nextNode.properties
+      shallowReadonly(nextNode.properties)
     );
     renderNode(nextNode, true);
 

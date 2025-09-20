@@ -143,7 +143,7 @@ export class TextNode {
 
 export class ComponentNode {
   constructor(component, properties, slots) {
-    if (component[REACTIVE_FLAGS.IS_REACTIVE]) {
+    if (component[REACTIVE_FLAGS.IS_REACTIVE] || component[REACTIVE_FLAGS.IS_READONLY]) {
       this.component = component[REACTIVE_FLAGS.UNWRAP];
     } else {
       this.component = component;

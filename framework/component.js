@@ -2,8 +2,9 @@ import { renderQueue } from './render/index.js';
 import { FUNCTION_CACHE_LIMIT, INSTANCE_STATES } from './constants.js';
 import { DependencySubscriber } from './effect.js';
 import { registerHMRComponent, removeHMRComponent } from './hmr.js';
+import { shallowReadonly } from './reactive.js';
 
-const reservedProps = new Set(['methods', 'data']);
+const reservedProps = new Set(['methods', 'data', 'props']);
 
 const methodsProxyHandler = {
   get(instance, prop) {
@@ -60,6 +61,10 @@ const instanceProxyHandler = {
         return instance.data;
       }
 
+      case 'props': {
+        return instance.vnode.properties;
+      }
+
       case '$forceUpdate': {
         return instance.update.bind(instance);
       }
@@ -75,6 +80,10 @@ const instanceProxyHandler = {
 
     if (prop in instance.data) {
       return instance.data[prop];
+    }
+
+    if (prop in instance.vnode.properties) {
+      return instance.vnode.properties[prop];
     }
 
     return instance.publicMethods[prop];
@@ -124,7 +133,7 @@ export class ComponentInstance {
     this.cachedFunctions = new Map();
     this.cacheHistory = [];
 
-    this.callHook('onCreated', this.vnode.properties);
+    this.callHook('onCreated', shallowReadonly(this.vnode.properties));
 
     if (import.meta.hot) {
       registerHMRComponent(this);

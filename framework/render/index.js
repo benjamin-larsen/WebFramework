@@ -3,6 +3,7 @@ import { refreshComponentAnchor } from '../anchor.js';
 import { patch } from './patching.js';
 import { INSTANCE_STATES, EMPTY_PROPS } from '../constants.js';
 import { withTracking, setCurrentRoot, setCurrentInstance, popCurrentInstance } from '../effect.js';
+import { shallowReadonly } from '../reactive.js';
 
 let shouldTrackTime = false;
 
@@ -65,7 +66,12 @@ export function renderNode(node, force) {
 
     const nextChildren = withTracking(
       node.instance.subscriber,
-      node.component.render.bind(node.instance.public, node.instance.public, node.properties, node.slots || EMPTY_PROPS)
+      node.component.render.bind(
+        node.instance.public,
+        node.instance.public,
+        shallowReadonly(node.properties),
+        node.slots || EMPTY_PROPS
+      )
     );
 
     if (!Array.isArray(nextChildren)) {
@@ -79,7 +85,7 @@ export function renderNode(node, force) {
     node.instance.setStatus(INSTANCE_STATES.SYNCED);
     node.instance.callHook(
       isMounted ? 'onMounted' : 'onUpdated',
-      node.properties
+      shallowReadonly(node.properties)
     );
   } finally {
     popCurrentInstance();

@@ -1,4 +1,5 @@
 import { INSTANCE_STATES } from './constants.js';
+import { shallowReadonly } from './reactive.js';
 
 const instanceMap = new Map();
 const componentMap = new Map();
@@ -41,7 +42,7 @@ function fullReload(instance, newComponent) {
   // Setup new
   instance.vnode.component = newComponent;
 
-  instance.callHook('onCreated', instance.vnode.properties);
+  instance.callHook('onCreated', shallowReadonly(instance.vnode.properties));
   instance.update();
 }
 

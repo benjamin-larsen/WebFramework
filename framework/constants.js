@@ -14,6 +14,7 @@ export const INSTANCE_STATES = {
 export const REACTIVE_FLAGS = {
   UNWRAP: Symbol('reactive_unwrap'),
   IS_REACTIVE: Symbol('is_reactive'),
+  IS_READONLY: Symbol("is_readonly"),
   IS_REF: Symbol('is_ref'),
   REF_VALUE: Symbol('ref_value')
 };
