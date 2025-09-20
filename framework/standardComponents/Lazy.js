@@ -3,49 +3,50 @@ import { c } from '../vnode.js';
 
 export default {
   methods: {
-    loadFunction(func) {
-      if (this.activeFunc) {
-        this.activeFunc.cancelled = true;
-        this.component.value = null;
+    loadFunction(ctx, func) {
+      console.log(ctx, func)
+      if (ctx.activeFunc) {
+        ctx.activeFunc.cancelled = true;
+        ctx.component.value = null;
       }
 
       const funcObj = { cancelled: false, func };
 
-      this.activeFunc = funcObj;
+      ctx.activeFunc = funcObj;
 
       func().then((module) => {
         if (funcObj.cancelled) return;
-        this.component.value = module.default;
+        ctx.component.value = module.default;
       });
     }
   },
 
-  onCreated({ loadFunc }) {
-    this.component = ref(null);
+  onCreated(ctx, { loadFunc }) {
+    ctx.component = ref(null);
 
-    this.loadFunction(loadFunc);
+    ctx.loadFunction(ctx, loadFunc);
   },
 
-  beforeUpdate({ loadFunc }) {
-    if (this.activeFunc.func === loadFunc) return;
+  beforeUpdate(ctx, { loadFunc }) {
+    if (ctx.activeFunc.func === loadFunc) return;
 
-    this.loadFunction(loadFunc);
+    ctx.loadFunction(ctx, loadFunc);
   },
 
-  onDestroy() {
-    if (this.activeFunc) {
-      this.activeFunc.cancelled = true;
+  onDestroy(ctx) {
+    if (ctx.activeFunc) {
+      ctx.activeFunc.cancelled = true;
     }
   },
 
-  render(props) {
+  render(ctx, props) {
     const childProps = { ...props };
     delete childProps.loadFunc;
     delete childProps.fallback;
 
     return [
       this.component.value
-        ? c(this.component.value, childProps)
+        ? c(ctx.component.value, childProps)
         : props.fallback
           ? c(props.fallback, {})
           : null

@@ -65,7 +65,7 @@ export function renderNode(node, force) {
 
     const nextChildren = withTracking(
       node.instance.subscriber,
-      node.component.render.bind(node.instance.public, node.properties, node.slots || EMPTY_PROPS)
+      node.component.render.bind(node.instance.public, node.instance.public, node.properties, node.slots || EMPTY_PROPS)
     );
 
     if (!Array.isArray(nextChildren)) {
@@ -79,7 +79,7 @@ export function renderNode(node, force) {
     node.instance.setStatus(INSTANCE_STATES.SYNCED);
     node.instance.callHook(
       isMounted ? 'onMounted' : 'onUpdated',
-      node.properties || {}
+      node.properties
     );
   } finally {
     popCurrentInstance();
