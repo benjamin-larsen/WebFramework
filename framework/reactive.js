@@ -107,7 +107,7 @@ const readonlyHandler = {
 
   set(target, prop, value) {
     console.warn("Tried to set property", prop, "to", value, "on readonly object", target);
-    return false;
+    return true;
   },
 
   has(target, prop) {
@@ -122,7 +122,7 @@ const readonlyHandler = {
 
   deleteProperty(target, prop) {
     console.warn("Tried to delete property", prop, "on readonly object", target);
-    return false;
+    return true;
   }
 }
 
