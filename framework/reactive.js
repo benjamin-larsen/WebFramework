@@ -148,13 +148,15 @@ const shallowReadonlyHandler = {
 function canReact(target) {
   if (target === null || typeof target !== 'object') return false;
 
-  switch (target.constructor) {
-    case Object:
-    case Array:
-    case Map:
-    case Set:
-    case WeakMap:
-    case WeakSet: {
+  const type = Object.prototype.toString.call(target) .slice(8, -1);
+
+  switch (type) {
+    case "Object":
+    case "Array":
+    case "Map":
+    case "Set":
+    case "WeakMap":
+    case "WeakSet": {
       return true;
     }
 
