@@ -62,7 +62,7 @@ const instanceProxyHandler = {
       }
 
       case 'props': {
-        return instance.vnode.properties;
+        return shallowReadonly(instance.vnode.properties);
       }
 
       case '$forceUpdate': {
