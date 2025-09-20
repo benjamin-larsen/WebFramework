@@ -254,7 +254,8 @@ class ReactiveRef {
       !this.isShallow &&
       value !== null &&
       typeof value === 'object' &&
-      !value[REACTIVE_FLAGS.IS_REF]
+      !value[REACTIVE_FLAGS.IS_REF] &&
+      !value[REACTIVE_FLAGS.IS_READONLY]
     ) {
       return reactive(value);
     } else {
