@@ -64,7 +64,7 @@ export class FragmentNode {
     for (const child of this.children) {
       if (!child) continue;
 
-      child.move(parentNode, anchor)
+      child.move(parentNode, anchor);
     }
   }
 }
@@ -105,10 +105,7 @@ export class ElementNode {
   }
 
   move(parentNode, anchor) {
-    parentNode.el.insertBefore(
-      this.el,
-      anchor
-    );
+    parentNode.el.insertBefore(this.el, anchor);
   }
 }
 
@@ -134,16 +131,16 @@ export class TextNode {
   }
 
   move(parentNode, anchor) {
-    parentNode.el.insertBefore(
-      this.el,
-      anchor
-    );
+    parentNode.el.insertBefore(this.el, anchor);
   }
 }
 
 export class ComponentNode {
   constructor(component, properties, slots) {
-    if (component[REACTIVE_FLAGS.IS_REACTIVE] || component[REACTIVE_FLAGS.IS_READONLY]) {
+    if (
+      component[REACTIVE_FLAGS.IS_REACTIVE] ||
+      component[REACTIVE_FLAGS.IS_READONLY]
+    ) {
       this.component = component[REACTIVE_FLAGS.UNWRAP];
     } else {
       this.component = component;
@@ -203,7 +200,7 @@ export class ComponentNode {
   move(parentNode, anchor) {
     for (const child of this.children) {
       if (!child) continue;
-      child.move(parentNode, anchor)
+      child.move(parentNode, anchor);
     }
   }
 }
@@ -226,7 +223,11 @@ export function createVNode(type, ...data) {
   switch (typeof type) {
     case 'string': {
       if (standardComponents[type]) {
-        return new ComponentNode(standardComponents[type], data[0] || {}, data[1]);
+        return new ComponentNode(
+          standardComponents[type],
+          data[0] || {},
+          data[1]
+        );
       }
 
       let properties = {};

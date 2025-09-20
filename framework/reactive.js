@@ -83,7 +83,7 @@ const shallowReactiveHandler = {
   ownKeys: reactiveHandler.ownKeys,
 
   deleteProperty: reactiveHandler.deleteProperty
-}
+};
 
 const readonlyHandler = {
   get(target, prop) {
@@ -106,7 +106,14 @@ const readonlyHandler = {
   },
 
   set(target, prop, value) {
-    console.warn("Tried to set property", prop, "to", value, "on readonly object", target);
+    console.warn(
+      'Tried to set property',
+      prop,
+      'to',
+      value,
+      'on readonly object',
+      target
+    );
     return true;
   },
 
@@ -121,10 +128,15 @@ const readonlyHandler = {
   },
 
   deleteProperty(target, prop) {
-    console.warn("Tried to delete property", prop, "on readonly object", target);
+    console.warn(
+      'Tried to delete property',
+      prop,
+      'on readonly object',
+      target
+    );
     return true;
   }
-}
+};
 
 const shallowReadonlyHandler = {
   get(target, prop) {
@@ -143,20 +155,20 @@ const shallowReadonlyHandler = {
   ownKeys: readonlyHandler.ownKeys,
 
   deleteProperty: readonlyHandler.deleteProperty
-}
+};
 
 function canReact(target) {
   if (target === null || typeof target !== 'object') return false;
 
-  const type = Object.prototype.toString.call(target) .slice(8, -1);
+  const type = Object.prototype.toString.call(target).slice(8, -1);
 
   switch (type) {
-    case "Object":
-    case "Array":
-    case "Map":
-    case "Set":
-    case "WeakMap":
-    case "WeakSet": {
+    case 'Object':
+    case 'Array':
+    case 'Map':
+    case 'Set':
+    case 'WeakMap':
+    case 'WeakSet': {
       return true;
     }
 
@@ -168,7 +180,8 @@ function canReact(target) {
 
 export function reactive(target) {
   if (!canReact(target)) return target;
-  if (target[REACTIVE_FLAGS.IS_REACTIVE] || target[REACTIVE_FLAGS.IS_READONLY]) return target;
+  if (target[REACTIVE_FLAGS.IS_REACTIVE] || target[REACTIVE_FLAGS.IS_READONLY])
+    return target;
   if (reactiveMap.has(target)) return reactiveMap.get(target);
   const proxy = new Proxy(target, reactiveHandler);
 
@@ -179,7 +192,8 @@ export function reactive(target) {
 
 export function shallowReactive(target) {
   if (!canReact(target)) return target;
-  if (target[REACTIVE_FLAGS.IS_REACTIVE] || target[REACTIVE_FLAGS.IS_READONLY]) return target;
+  if (target[REACTIVE_FLAGS.IS_REACTIVE] || target[REACTIVE_FLAGS.IS_READONLY])
+    return target;
   if (shallowReactiveMap.has(target)) return shallowReactiveMap.get(target);
   const proxy = new Proxy(target, shallowReactiveHandler);
 
@@ -191,9 +205,9 @@ export function shallowReactive(target) {
 export function readonly(target) {
   if (!canReact(target)) return target;
   if (target[REACTIVE_FLAGS.IS_READONLY]) return target;
-  
+
   if (target[REACTIVE_FLAGS.IS_REACTIVE]) {
-    target = target[REACTIVE_FLAGS.UNWRAP]
+    target = target[REACTIVE_FLAGS.UNWRAP];
   }
 
   if (readonlyMap.has(target)) return readonlyMap.get(target);
@@ -207,9 +221,9 @@ export function readonly(target) {
 export function shallowReadonly(target) {
   if (!canReact(target)) return target;
   if (target[REACTIVE_FLAGS.IS_READONLY]) return target;
-  
+
   if (target[REACTIVE_FLAGS.IS_REACTIVE]) {
-    target = target[REACTIVE_FLAGS.UNWRAP]
+    target = target[REACTIVE_FLAGS.UNWRAP];
   }
 
   if (shallowReadonlyMap.has(target)) return shallowReadonlyMap.get(target);

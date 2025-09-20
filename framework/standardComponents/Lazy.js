@@ -4,7 +4,7 @@ import { c } from '../vnode.js';
 export default {
   methods: {
     loadFunction(ctx, func) {
-      console.log(ctx, func)
+      console.log(ctx, func);
       if (ctx.activeFunc) {
         ctx.activeFunc.cancelled = true;
         ctx.component.value = null;

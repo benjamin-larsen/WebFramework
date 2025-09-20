@@ -6,7 +6,7 @@ function patchClassName(prevNode, nextNode, classList) {
 
   if (classList === null || classList === undefined) {
     if (prevNode.properties.class && prevNode.el) {
-      prevNode.el.removeAttribute("class");
+      prevNode.el.removeAttribute('class');
     }
 
     return;
@@ -32,11 +32,11 @@ function patchClassName(prevNode, nextNode, classList) {
 }
 
 // Code from Vue (@vue/shared)
-const hyphenateRE = /\B([A-Z])/g
+const hyphenateRE = /\B([A-Z])/g;
 
 function hyphenate(str) {
-  if (str.slice(0, 2) === "--") return str;
-  return str.replace(hyphenateRE, '-$1').toLowerCase()
+  if (str.slice(0, 2) === '--') return str;
+  return str.replace(hyphenateRE, '-$1').toLowerCase();
 }
 
 function patchStyles(prevNode, nextNode, rawStyles) {
@@ -44,7 +44,7 @@ function patchStyles(prevNode, nextNode, rawStyles) {
 
   if (rawStyles === null || rawStyles === undefined) {
     if (prevNode.properties.style && prevNode.el) {
-      prevNode.el.removeAttribute("style");
+      prevNode.el.removeAttribute('style');
     }
 
     return;
@@ -55,7 +55,7 @@ function patchStyles(prevNode, nextNode, rawStyles) {
 
     for (const style in rawStyles) {
       if (!rawStyles[style]) continue;
-      styleArray.push(`${hyphenate(style)}: ${rawStyles[style]}`)
+      styleArray.push(`${hyphenate(style)}: ${rawStyles[style]}`);
     }
 
     computedStyle = styleArray.join(';');
@@ -98,12 +98,13 @@ function createInvoker(func, node) {
 
 function patchEvent(prevNode, nextNode, propName, listenerFn) {
   const eventName = propName[2].toLowerCase() + propName.substring(3);
-  const hasPrevInvoker = prevNode && prevNode.eventInvokers && prevNode.eventInvokers[eventName];
+  const hasPrevInvoker =
+    prevNode && prevNode.eventInvokers && prevNode.eventInvokers[eventName];
 
   if (typeof listenerFn !== 'function') {
     if (hasPrevInvoker && prevNode.el) {
       prevNode.el.removeEventListener(eventName, prevNode.properties[propName]);
-      delete prevNode.eventInvokers[eventName]
+      delete prevNode.eventInvokers[eventName];
     }
 
     return;

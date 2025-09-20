@@ -34,13 +34,7 @@ function patchFragment(parentNode, nextArray, prevNode, index, level) {
   }
 }
 
-function patchElement(
-  parentNode,
-  nextNode,
-  prevNode,
-  index,
-  level
-) {
+function patchElement(parentNode, nextNode, prevNode, index, level) {
   if (prevNode && prevNode.el && prevNode.tag === nextNode.tag) {
     const nextChildren = nextNode.children;
 
@@ -205,12 +199,7 @@ function mount(parentNode, nextChildren, level) {
     const nextNode = nextChildren[index];
 
     if (typeof nextNode === 'string') {
-      parentNode.children[index] = patchText(
-        parentNode,
-        nextNode,
-        null,
-        index
-      );
+      parentNode.children[index] = patchText(parentNode, nextNode, null, index);
       continue;
     }
 
@@ -254,7 +243,8 @@ function mount(parentNode, nextChildren, level) {
 }
 
 export function patch(parentNode, nextChildren, level) {
-  if (parentNode.children.length === 0) return mount(parentNode, nextChildren, level);
+  if (parentNode.children.length === 0)
+    return mount(parentNode, nextChildren, level);
   // Compute Key Map
   const keyMap = new Map();
   const unmountList = new Map();
@@ -282,13 +272,9 @@ export function patch(parentNode, nextChildren, level) {
     const diffData = evalDiff(prevNode, nextNode);
 
     if (!diffData.isSame) {
-
       if (diffData.prevKey) {
         // Stash Previous Node
-        unmountList.set(
-          diffData.prevKey,
-          prevNode
-        )
+        unmountList.set(diffData.prevKey, prevNode);
       } else if (prevNode) {
         prevNode.unmount();
       }
@@ -298,7 +284,9 @@ export function patch(parentNode, nextChildren, level) {
       prevNode = null;
 
       if (diffData.nextKey) {
-        const result = unmountList.get(diffData.nextKey) || parentNode.keyMap.get(diffData.nextKey);
+        const result =
+          unmountList.get(diffData.nextKey) ||
+          parentNode.keyMap.get(diffData.nextKey);
 
         // for currentNode to be keyed, it must mean that it was not stashed previously
         if (typeof result === 'number') {
@@ -311,7 +299,7 @@ export function patch(parentNode, nextChildren, level) {
             findAnchor(parentNode.children, index) || parentNode.anchor || null
           );
         } else if (typeof result === 'object') {
-          unmountList.delete(diffData.nextKey)
+          unmountList.delete(diffData.nextKey);
           prevNode = result;
 
           prevNode.move(
@@ -372,14 +360,18 @@ export function patch(parentNode, nextChildren, level) {
   parentNode.keyMap = keyMap;
 
   // index should inheritely be set to nextChildren.length according to the previous loop
-  for (index = nextChildren.length; index < parentNode.children.length; index++) {
+  for (
+    index = nextChildren.length;
+    index < parentNode.children.length;
+    index++
+  ) {
     const item = parentNode.children[index];
 
     if (item) item.unmount();
   }
 
   for (const [_, orphan] of unmountList) {
-    orphan.unmount()
+    orphan.unmount();
   }
 
   parentNode.children.length = nextChildren.length;

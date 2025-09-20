@@ -14,15 +14,17 @@ export function setCurrentRoot(root) {
 }
 
 export function getCurrentInstance() {
-  return instanceStack.length > 0 ? instanceStack[instanceStack.length - 1] : null;
+  return instanceStack.length > 0
+    ? instanceStack[instanceStack.length - 1]
+    : null;
 }
 
 export function setCurrentInstance(inst) {
-  instanceStack.push(inst)
+  instanceStack.push(inst);
 }
 
 export function popCurrentInstance() {
-  instanceStack.pop()
+  instanceStack.pop();
 }
 
 class Subscription {
