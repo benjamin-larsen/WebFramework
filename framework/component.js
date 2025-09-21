@@ -160,11 +160,11 @@ export class ComponentInstance {
           this.public,
           ...args
         ]);
-
-        return true;
       } catch (e) {
-        console.log('Error occured while running Lifecycle Hook', e);
+        console.log(`Error occured while running Lifecycle Hook: ${hookName}`, e);
       }
+
+      return true;
     }
 
     return false;
