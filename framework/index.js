@@ -16,7 +16,8 @@ export {
   readonly,
   shallowReadonly,
   ref,
-  shallowRef
+  shallowRef,
+  isRef
 } from './reactive.js';
 export { withoutTracking } from './effect.js';
 export { default as Debugger } from './debug/index.js';
