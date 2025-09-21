@@ -11,15 +11,16 @@ import { ComponentInstance } from '../component.js';
 import { shallowCompareObj } from '../helpers.js';
 import { INSTANCE_STATES } from '../constants.js';
 import { shallowReadonly } from '../reactive.js';
+import { getCurrentInstance } from '../effect.js';
 
-function patchFragment(parentNode, nextArray, prevNode, index, level) {
+function patchFragment(parentNode, nextArray, prevNode, index) {
   if (prevNode && prevNode.el) {
     prevNode.el = parentNode.el;
     prevNode.parent = parentNode;
     prevNode.index = index;
 
     refreshComponentAnchor(prevNode);
-    patch(prevNode, nextArray, level);
+    patch(prevNode, nextArray);
     return prevNode;
   } else {
     const nextNode = new FragmentNode();
@@ -28,20 +29,20 @@ function patchFragment(parentNode, nextArray, prevNode, index, level) {
     nextNode.index = index;
 
     refreshComponentAnchor(nextNode);
-    mount(nextNode, nextArray, level);
+    mount(nextNode, nextArray);
 
     return nextNode;
   }
 }
 
-function patchElement(parentNode, nextNode, prevNode, index, level) {
+function patchElement(parentNode, nextNode, prevNode, index) {
   if (prevNode && prevNode.el && prevNode.tag === nextNode.tag) {
     const nextChildren = nextNode.children;
 
     // So that patchProps can access .el, will need to reform the way that this is done.
     nextNode.el = prevNode.el;
 
-    patch(prevNode, nextChildren, level);
+    patch(prevNode, nextChildren);
     patchProps(prevNode, nextNode);
 
     // After done patching props, set prev properties to new, will need to reform this.
@@ -52,7 +53,7 @@ function patchElement(parentNode, nextNode, prevNode, index, level) {
     const el = document.createElement(nextNode.tag);
     nextNode.el = el;
 
-    mount(nextNode, nextNode.children, level);
+    mount(nextNode, nextNode.children);
     patchProps(null, nextNode);
 
     parentNode.el.insertBefore(
@@ -86,12 +87,12 @@ function patchText(parentNode, nextText, prevNode, index) {
   }
 }
 
-function patchComponent(parentNode, nextNode, prevNode, index, level) {
+function patchComponent(parentNode, nextNode, prevNode, index) {
   if (prevNode && prevNode.instance) {
     nextNode.instance = prevNode.instance;
     nextNode.instance.vnode = nextNode;
   } else {
-    nextNode.instance = new ComponentInstance(nextNode, level + 1);
+    nextNode.instance = new ComponentInstance(nextNode, getCurrentInstance().level + 1);
   }
 
   if (
@@ -175,7 +176,7 @@ function evalDiff(prevNode, nextNode) {
   return { isSame, prevKey, nextKey };
 }
 
-function mount(parentNode, nextChildren, level) {
+function mount(parentNode, nextChildren) {
   // Compute Key Map
   const keyMap = new Map();
 
@@ -208,8 +209,7 @@ function mount(parentNode, nextChildren, level) {
         parentNode,
         nextNode,
         null,
-        index,
-        level
+        index
       );
       continue;
     }
@@ -225,16 +225,14 @@ function mount(parentNode, nextChildren, level) {
         parentNode,
         nextNode,
         null,
-        index,
-        level
+        index
       );
     } else if (nextNode.constructor === ComponentNode) {
       parentNode.children[index] = patchComponent(
         parentNode,
         nextNode,
         null,
-        index,
-        level
+        index
       );
     }
   }
@@ -242,9 +240,9 @@ function mount(parentNode, nextChildren, level) {
   parentNode.keyMap = keyMap;
 }
 
-export function patch(parentNode, nextChildren, level) {
+export function patch(parentNode, nextChildren) {
   if (parentNode.children.length === 0)
-    return mount(parentNode, nextChildren, level);
+    return mount(parentNode, nextChildren);
   // Compute Key Map
   const keyMap = new Map();
   const unmountList = new Map();
@@ -325,8 +323,7 @@ export function patch(parentNode, nextChildren, level) {
         parentNode,
         nextNode,
         prevNode,
-        index,
-        level
+        index
       );
       continue;
     }
@@ -343,16 +340,14 @@ export function patch(parentNode, nextChildren, level) {
         parentNode,
         nextNode,
         prevNode,
-        index,
-        level
+        index
       );
     } else if (nextNode.constructor === ComponentNode) {
       parentNode.children[index] = patchComponent(
         parentNode,
         nextNode,
         prevNode,
-        index,
-        level
+        index
       );
     }
   }
