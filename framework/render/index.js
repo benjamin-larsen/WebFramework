@@ -5,8 +5,7 @@ import { INSTANCE_STATES, EMPTY_PROPS } from '../constants.js';
 import {
   withTracking,
   setCurrentRoot,
-  setCurrentInstance,
-  popCurrentInstance
+  setCurrentInstance
 } from '../effect.js';
 import { shallowReadonly } from '../reactive.js';
 
@@ -60,11 +59,10 @@ export function renderNode(node, force) {
   if (!node.instance) return;
   if (!force && node.instance.status === INSTANCE_STATES.SYNCED) return;
 
-  let startTime = shouldTrackTime ? performance.now() : 0;
+  const startTime = shouldTrackTime ? performance.now() : 0;
+  const prevInstance = setCurrentInstance(node.instance);;
 
   try {
-    setCurrentInstance(node.instance);
-
     if (node.constructor === ComponentNode) {
       refreshComponentAnchor(node);
     }
@@ -93,7 +91,7 @@ export function renderNode(node, force) {
       shallowReadonly(node.properties)
     );
   } finally {
-    popCurrentInstance();
+    setCurrentInstance(prevInstance);
 
     if (shouldTrackTime) {
       const time = performance.now() - startTime;

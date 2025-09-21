@@ -3,7 +3,7 @@ let activeEffect = null;
 let bypassCounter = 0;
 
 let currentRoot = null; // Current Root is the Render Queue being triggered, no need to make stack as they should be done one-by-one.
-let instanceStack = []; // Stack of Instances being rendered.
+let currentInstance = null;
 
 export function getCurrentRoot() {
   return currentRoot;
@@ -14,17 +14,13 @@ export function setCurrentRoot(root) {
 }
 
 export function getCurrentInstance() {
-  return instanceStack.length > 0
-    ? instanceStack[instanceStack.length - 1]
-    : null;
+  return currentInstance;
 }
 
 export function setCurrentInstance(inst) {
-  instanceStack.push(inst);
-}
-
-export function popCurrentInstance() {
-  instanceStack.pop();
+  const prev = currentInstance;
+  currentInstance = inst;
+  return prev;
 }
 
 class Subscription {
