@@ -1,5 +1,6 @@
 const targetMap = new Map();
 const effectStack = [];
+let activeEffect = null;
 let bypassCounter = 0;
 
 let currentRoot = null; // Current Root is the Render Queue being triggered, no need to make stack as they should be done one-by-one.
@@ -111,11 +112,9 @@ function subscribe(target, subscriber) {
 
 export function track(target) {
   if (isTrackingDisabled()) return;
-  if (effectStack.length <= 0) return;
+  if (!activeEffect) return;
 
-  const subscriber = effectStack[effectStack.length - 1];
-
-  subscribe(target, subscriber);
+  subscribe(target, activeEffect);
 }
 
 export function trigger(target) {
@@ -145,11 +144,13 @@ export function withTracking(subscription, func) {
 
   subscription.preTracking();
   effectStack.push(subscription);
+  activeEffect = subscription;
 
   try {
     return func();
   } finally {
     effectStack.pop();
+    activeEffect = effectStack[effectStack.length - 1];
     subscription.postTracking();
   }
 }
