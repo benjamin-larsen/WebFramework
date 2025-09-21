@@ -152,7 +152,7 @@ export class ComponentInstance {
   }
 
   callHook(hookName, ...args) {
-    if (!this.vnode) return;
+    if (!this.vnode) return false;
 
     if (typeof this.vnode.component[hookName] === 'function') {
       try {
@@ -160,10 +160,14 @@ export class ComponentInstance {
           this.public,
           ...args
         ]);
+
+        return true;
       } catch (e) {
         console.log('Error occured while running Lifecycle Hook', e);
       }
     }
+
+    return false;
   }
 
   getFn(key, func, force = false) {

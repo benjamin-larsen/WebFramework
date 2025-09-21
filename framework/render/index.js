@@ -84,13 +84,22 @@ export function renderNode(node, force) {
     patch(node, nextChildren);
 
     const isMounted = node.instance.status === INSTANCE_STATES.BEFORE_MOUNT;
-
-    node.instance.setStatus(INSTANCE_STATES.SYNCED);
     node.instance.callHook(
       isMounted ? 'onMounted' : 'onUpdated',
       shallowReadonly(node.properties)
     );
+  } catch(e) {
+    const success = node.instance.callHook(
+      'onError',
+      e
+    );
+
+    if (!success) {
+      console.log('Uncaught Error occured while attempting to Render Component.', e);
+    }
   } finally {
+    node.instance.setStatus(INSTANCE_STATES.SYNCED);
+
     setCurrentInstance(prevInstance);
 
     if (shouldTrackTime) {
