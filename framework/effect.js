@@ -1,5 +1,4 @@
 const targetMap = new Map();
-const effectStack = [];
 let activeEffect = null;
 let bypassCounter = 0;
 
@@ -143,14 +142,14 @@ export function withTracking(subscription, func) {
     );
 
   subscription.preTracking();
-  effectStack.push(subscription);
+
+  const prevEffect = activeEffect;
   activeEffect = subscription;
 
   try {
     return func();
   } finally {
-    effectStack.pop();
-    activeEffect = effectStack[effectStack.length - 1];
+    activeEffect = prevEffect;
     subscription.postTracking();
   }
 }
