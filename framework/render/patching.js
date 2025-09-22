@@ -92,7 +92,10 @@ function patchComponent(parentNode, nextNode, prevNode, index) {
     nextNode.instance = prevNode.instance;
     nextNode.instance.vnode = nextNode;
   } else {
-    nextNode.instance = new ComponentInstance(nextNode, getCurrentInstance().level + 1);
+    nextNode.instance = new ComponentInstance(
+      nextNode,
+      getCurrentInstance().level + 1
+    );
   }
 
   if (
@@ -242,8 +245,7 @@ function mount(parentNode, nextChildren) {
 }
 
 export function patch(parentNode, nextChildren) {
-  if (parentNode.children.length === 0)
-    return mount(parentNode, nextChildren);
+  if (parentNode.children.length === 0) return mount(parentNode, nextChildren);
   // Compute Key Map
   const keyMap = new Map();
   const unmountList = new Map();

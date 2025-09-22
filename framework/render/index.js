@@ -2,11 +2,7 @@ import { ComponentNode } from '../vnode.js';
 import { refreshComponentAnchor } from '../anchor.js';
 import { patch } from './patching.js';
 import { INSTANCE_STATES, EMPTY_PROPS } from '../constants.js';
-import {
-  withTracking,
-  setCurrentRoot,
-  setCurrentInstance
-} from '../effect.js';
+import { withTracking, setCurrentRoot, setCurrentInstance } from '../effect.js';
 import { shallowReadonly } from '../reactive.js';
 
 let shouldTrackTime = false;
@@ -60,7 +56,7 @@ export function renderNode(node, force) {
   if (!force && node.instance.status === INSTANCE_STATES.SYNCED) return;
 
   const startTime = shouldTrackTime ? performance.now() : 0;
-  const prevInstance = setCurrentInstance(node.instance);;
+  const prevInstance = setCurrentInstance(node.instance);
 
   try {
     if (node.constructor === ComponentNode) {
@@ -90,14 +86,14 @@ export function renderNode(node, force) {
       isMounted ? 'onMounted' : 'onUpdated',
       shallowReadonly(node.properties)
     );
-  } catch(e) {
-    const success = node.instance.callHook(
-      'onError',
-      e
-    );
+  } catch (e) {
+    const success = node.instance.callHook('onError', e);
 
     if (!success) {
-      console.log('Uncaught Error occured while attempting to Render Component.', e);
+      console.log(
+        'Uncaught Error occured while attempting to Render Component.',
+        e
+      );
     }
   } finally {
     setCurrentInstance(prevInstance);
