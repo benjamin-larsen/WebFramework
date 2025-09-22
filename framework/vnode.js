@@ -4,9 +4,9 @@ import standardComponents from './standardComponents/index.js';
 import { isRef } from './reactive.js';
 
 export class RootContainer {
-  constructor(component, el) {
+  constructor(component, el, props) {
     this.component = component;
-    this.properties = EMPTY_PROPS;
+    this.properties = props;
     this.children = [];
     this.keyMap = new Map();
 
@@ -16,7 +16,7 @@ export class RootContainer {
   }
 }
 
-export function root(component, queryOrElement) {
+export function root(component, queryOrElement, props) {
   let element = queryOrElement;
 
   if (typeof queryOrElement === 'string') {
@@ -25,7 +25,7 @@ export function root(component, queryOrElement) {
 
   if (!(element instanceof HTMLElement)) throw Error('Invalid Root Element');
 
-  return new RootContainer(component, element);
+  return new RootContainer(component, element, props || EMPTY_PROPS);
 }
 
 export function head(component) {
