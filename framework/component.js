@@ -1,6 +1,6 @@
 import { renderQueue } from './render/index.js';
 import { FUNCTION_CACHE_LIMIT, INSTANCE_STATES } from './constants.js';
-import { DependencySubscriber } from './effect.js';
+import { DependencySubscriber, withoutTracking } from './effect.js';
 import { registerHMRComponent, removeHMRComponent } from './hmr.js';
 import { shallowReadonly } from './reactive.js';
 
@@ -156,10 +156,13 @@ export class ComponentInstance {
 
     if (typeof this.vnode.component[hookName] === 'function') {
       try {
-        this.vnode.component[hookName].apply(this.public, [
-          this.public,
-          ...args
-        ]);
+        withoutTracking(
+          this.vnode.component[hookName].bind(
+            this.public,
+            this.public,
+            ...args
+          )
+        );
       } catch (e) {
         console.log(`Error occured while running Lifecycle Hook: ${hookName}`, e);
       }

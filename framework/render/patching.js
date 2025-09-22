@@ -118,12 +118,13 @@ function patchComponent(parentNode, nextNode, prevNode, index) {
     nextNode.parent = parentNode;
     nextNode.el = parentNode.el;
 
-    nextNode.instance.callHook(
-      nextNode.instance.status === INSTANCE_STATES.BEFORE_MOUNT
-        ? 'beforeMount'
-        : 'beforeUpdate',
-      shallowReadonly(nextNode.properties)
-    );
+    if (nextNode.instance.status !== INSTANCE_STATES.BEFORE_MOUNT) {
+      nextNode.instance.callHook(
+        'beforeUpdate',
+        shallowReadonly(nextNode.properties)
+      );
+    }
+
     renderNode(nextNode, true);
 
     return nextNode;
