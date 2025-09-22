@@ -177,7 +177,7 @@ function evalDiff(prevNode, nextNode) {
     }
   }
 
-  return { isSame, prevKey, nextKey };
+  return { isSame, prevKey, nextKey, nextType };
 }
 
 function mount(parentNode, nextChildren) {
@@ -244,6 +244,22 @@ function mount(parentNode, nextChildren) {
   parentNode.keyMap = keyMap;
 }
 
+function resolveMatchedChild(prevNode, nextNode, nextType) {
+  const prevType = getNodeType(prevNode);
+
+  if (
+    prevType !== nextType ||
+    (prevType === ElementNode && prevNode.tag !== nextNode.tag) ||
+    (prevType === ComponentNode && prevNode.component !== nextNode.component)
+  ) {
+    prevNode.unmount();
+
+    return null;
+  }
+
+  return prevNode;
+}
+
 export function patch(parentNode, nextChildren) {
   if (parentNode.children.length === 0) return mount(parentNode, nextChildren);
   // Compute Key Map
@@ -289,20 +305,19 @@ export function patch(parentNode, nextChildren) {
           unmountList.get(diffData.nextKey) ||
           parentNode.keyMap.get(diffData.nextKey);
 
-        // for currentNode to be keyed, it must mean that it was not stashed previously
         if (typeof result === 'number') {
-          prevNode = parentNode.children[result];
-          parentNode.children[result] = null;
-
-          // Check if this is really nesscary
-          prevNode.move(
-            parentNode,
-            findAnchor(parentNode.children, index) || parentNode.anchor || null
+          prevNode = resolveMatchedChild(
+            parentNode.children[result],
+            nextNode,
+            diffData.nextType
           );
+          parentNode.children[result] = null;
         } else if (typeof result === 'object') {
           unmountList.delete(diffData.nextKey);
-          prevNode = result;
+          prevNode = resolveMatchedChild(result, nextNode, diffData.nextType);
+        }
 
+        if (prevNode) {
           prevNode.move(
             parentNode,
             findAnchor(parentNode.children, index) || parentNode.anchor || null
