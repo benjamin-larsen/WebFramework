@@ -14,6 +14,7 @@ export function enableRenderTiming() {
 class RenderQueue {
   constructor() {
     this.waiting = new Set();
+    this.waitingDir = new Set();
     this.renderId = null;
   }
 
@@ -21,7 +22,9 @@ class RenderQueue {
     const items = [...this.waiting]
       .filter((inst) => inst.vnode)
       .sort((a, b) => a.level - b.level);
+    const dirs = [...this.waitingDir];
     this.waiting.clear();
+    this.waitingDir.clear();
 
     for (const componentInstance of items) {
       if (!componentInstance.vnode) continue;
@@ -30,11 +33,28 @@ class RenderQueue {
       renderNode(componentInstance.vnode);
     }
 
-    if (this.waiting.size > 0) {
+    setCurrentRoot(null);
+
+    for (const dir of dirs) {
+      if (!dir.sub) continue;
+
+      dir.runReact(false);
+    }
+
+    if (this.waiting.size > 0 || this.waitingDir.size > 0) {
       this.renderId = requestAnimationFrame(this.process.bind(this));
     } else {
-      setCurrentRoot(null);
       this.renderId = null;
+    }
+  }
+
+  queueDirective(dir) {
+    dir.status = INSTANCE_STATES.UNSYNCED;
+
+    this.waitingDir.add(dir);
+
+    if (!this.renderId) {
+      this.renderId = requestAnimationFrame(this.process.bind(this));
     }
   }
 

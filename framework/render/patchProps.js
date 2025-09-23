@@ -126,43 +126,6 @@ function patchEvent(prevNode, nextNode, propName, listenerFn) {
   }
 }
 
-function patchDirectives(prevNode, nextNode, directives) {
-  const hasNew = Array.isArray(directives);
-  const hasOld = prevNode && Array.isArray(prevNode.properties.directives);
-
-  if (hasNew) {
-    for (const directive of directives) {
-      const isNew =
-        !prevNode || !prevNode.properties.directives.includes(directive);
-
-      if (isNew) {
-        if (typeof directive.onMounted === 'function') {
-          directive.onMounted(nextNode.el, nextNode);
-        }
-      } else if (typeof directive.onUpdated === 'function') {
-        directive.onUpdated(nextNode.el, nextNode);
-      }
-    }
-  } else if (hasOld) {
-    for (const directive of prevNode.properties.directives) {
-      if (typeof directive.onDestroy === 'function') {
-        directive.onDestroy(nextNode.el, nextNode);
-      }
-    }
-  }
-
-  if (hasNew && hasOld) {
-    for (const directive of prevNode.properties.directives) {
-      if (
-        !directives.includes(directive) &&
-        typeof directive.onDestroy === 'function'
-      ) {
-        directive.onDestroy(nextNode.el, nextNode);
-      }
-    }
-  }
-}
-
 function isEvent(propName) {
   if (propName.length < 3) return false;
   if (propName[0] !== 'o') return false;
@@ -183,8 +146,6 @@ export function patchProp(prevNode, nextNode, prop, value) {
       prop, // Prop Name
       value // Listener Function
     );
-  } else if (prop === 'directives') {
-    patchDirectives(prevNode, nextNode, value);
   } else if (prop === 'ref') {
     if (prevNode && isRef(prevNode.properties.ref)) {
       if (prevNode.properties.ref === value) return;

@@ -11,6 +11,8 @@ export const INSTANCE_STATES = {
   UNSYNCED: 2 // eqv to dirty: true
 };
 
+export const DIRECTIVE_STATES = { SYNCED: 0, SYNCED_MOUNT: 1, UNSYNCED: 2 };
+
 export const REACTIVE_FLAGS = {
   UNWRAP: Symbol('reactive_unwrap'),
   IS_REACTIVE: Symbol('is_reactive'),
@@ -20,3 +22,4 @@ export const REACTIVE_FLAGS = {
 };
 
 export const EMPTY_PROPS = Object.freeze({});
+export const EMPTY_ARR = Object.freeze([]);

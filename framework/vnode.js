@@ -2,6 +2,7 @@ import { ComponentInstance } from './component.js';
 import { REACTIVE_FLAGS, EMPTY_PROPS } from './constants.js';
 import standardComponents from './standardComponents/index.js';
 import { isRef } from './reactive.js';
+import { destroyDirective } from './render/directives.js';
 
 export class RootContainer {
   constructor(component, el, props) {
@@ -91,11 +92,9 @@ export class ElementNode {
       this.properties.ref.value = null;
     }
 
-    if (Array.isArray(this.properties.directives)) {
-      for (const directive of this.properties.directives) {
-        if (typeof directive.onDestroy === 'function') {
-          directive.onDestroy(this.el, this);
-        }
+    if (this.dirs && this.dirs.constructor === Map) {
+      for (const [directive, binding] of this.dirs) {
+        destroyDirective(directive, binding, this);
       }
     }
 
@@ -158,7 +157,7 @@ export class ComponentNode {
 
     this.properties = properties ? properties : EMPTY_PROPS;
 
-    if (Array.isArray(this.properties.directives)) {
+    if (Array.isArray(this.dirs)) {
       console.warn(
         'Directive(s) were defined in a ComponentNode, but directives are not supported for Components.'
       );
@@ -257,6 +256,12 @@ export function createVNode(type, ...data) {
 }
 
 export const v = createVNode;
+
+export function withDirectives(vnode, dirs) {
+  vnode.dirs = dirs;
+
+  return vnode;
+}
 
 export const containerNodes = [
   RootContainer,

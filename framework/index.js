@@ -8,7 +8,8 @@ export {
   v,
   createElement,
   createComponent,
-  createVNode
+  createVNode,
+  withDirectives
 } from './vnode.js';
 export {
   reactive,

@@ -12,6 +12,10 @@ import { shallowCompareObj } from '../helpers.js';
 import { INSTANCE_STATES } from '../constants.js';
 import { shallowReadonly } from '../reactive.js';
 import { getCurrentInstance } from '../effect.js';
+import {
+  patchElementDirectives,
+  finishElementDirectives
+} from './directives.js';
 
 function patchFragment(parentNode, nextArray, prevNode, index) {
   if (prevNode && prevNode.el) {
@@ -42,17 +46,21 @@ function patchElement(parentNode, nextNode, prevNode, index) {
     // So that patchProps can access .el, will need to reform the way that this is done.
     nextNode.el = prevNode.el;
 
+    patchElementDirectives(prevNode, nextNode);
     patch(prevNode, nextChildren);
     patchProps(prevNode, nextNode);
 
     // After done patching props, set prev properties to new, will need to reform this.
     prevNode.properties = nextNode.properties;
 
+    finishElementDirectives(prevNode, nextNode);
+
     return prevNode;
   } else {
     const el = document.createElement(nextNode.tag);
     nextNode.el = el;
 
+    patchElementDirectives(null, nextNode);
     mount(nextNode, nextNode.children);
     patchProps(null, nextNode);
 
@@ -60,6 +68,8 @@ function patchElement(parentNode, nextNode, prevNode, index) {
       el,
       findAnchor(parentNode.children, index) || parentNode.anchor || null
     );
+
+    finishElementDirectives(null, nextNode);
 
     return nextNode;
   }
