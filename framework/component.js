@@ -1,8 +1,14 @@
 import { renderQueue } from './render/index.js';
-import { FUNCTION_CACHE_LIMIT, INSTANCE_STATES } from './constants.js';
-import { DependencySubscriber, withoutTracking } from './effect.js';
+import { INSTANCE_STATES } from './constants.js';
+import {
+  DependencySubscriber,
+  withoutTracking,
+  getCurrentInstance
+} from './effect.js';
 import { registerHMRComponent, removeHMRComponent } from './hmr.js';
 import { shallowReadonly } from './reactive.js';
+
+const globalSharedProps = new Map();
 
 const reservedProps = new Set(['methods', 'data', 'props']);
 
@@ -65,8 +71,24 @@ const instanceProxyHandler = {
         return shallowReadonly(instance.vnode.properties);
       }
 
+      case '$set': {
+        return ComponentInstance.prototype.setSharedProp.bind(instance);
+      }
+
+      case '$unset': {
+        return ComponentInstance.prototype.unsetSharedProp.bind(instance);
+      }
+
+      case '$get': {
+        return ComponentInstance.prototype.getSharedProp.bind(instance);
+      }
+
+      case '$list': {
+        return ComponentInstance.prototype.listSharedProps.bind(instance);
+      }
+
       case '$forceUpdate': {
-        return instance.update.bind(instance);
+        return ComponentInstance.prototype.update.bind(instance);
       }
 
       case '$raw': {
@@ -120,18 +142,17 @@ const instanceProxyHandler = {
 };
 
 export class ComponentInstance {
-  constructor(vnode, level) {
+  constructor(vnode, level, parent) {
     this.vnode = vnode;
     this.level = level;
     this.status = INSTANCE_STATES.BEFORE_MOUNT;
 
+    this.parent = parent;
     this.publicMethods = new Proxy(this, methodsProxyHandler);
     this.public = new Proxy(this, instanceProxyHandler);
     this.data = {};
 
     this.subscriber = new DependencySubscriber(this.update.bind(this));
-    this.cachedFunctions = new Map();
-    this.cacheHistory = [];
 
     this.callHook('onCreated', shallowReadonly(this.vnode.properties));
 
@@ -172,19 +193,46 @@ export class ComponentInstance {
     return false;
   }
 
-  getFn(key, func, force = false) {
-    if (!force && this.cachedFunctions.has(key))
-      return this.cachedFunctions.get(key);
+  setSharedProp(key, value) {
+    const map = this.shared || (this.shared = new Map());
+    map.set(key, value);
+  }
 
-    // In Future: probably evict based on lowest usage count
-    if (this.cacheHistory.length >= FUNCTION_CACHE_LIMIT) {
-      const evicted = this.cacheHistory.shift();
-      this.cachedFunctions.delete(evicted);
+  unsetSharedProp(key) {
+    if (!this.shared) return;
+    this.shared.delete(key);
+  }
+
+  getSharedProp(key, fallback) {
+    for (let currInst = this; currInst; currInst = currInst.parent) {
+      if (!currInst.shared) continue;
+
+      if (currInst.shared.has(key)) return currInst.shared.get(key);
     }
 
-    this.cacheHistory.push(key);
-    this.cachedFunctions.set(key, func);
-    return func;
+    if (globalSharedProps.has(key)) return globalSharedProps.get(key);
+
+    return fallback;
+  }
+
+  listSharedProps() {
+    const map = new Map();
+
+    for (let currInst = this; currInst; currInst = currInst.parent) {
+      if (!currInst.shared) continue;
+
+      for (const [key, value] of currInst.shared) {
+        if (map.has(key)) continue;
+        map.set(key, value);
+      }
+    }
+
+    for (const [key, value] of globalSharedProps) {
+      if (map.has(key)) continue;
+      map.set(key, value);
+    }
+
+    return map;
   }
 
   update() {
@@ -199,4 +247,46 @@ export class ComponentInstance {
     this.subscriber.destroy();
     this.vnode = null;
   }
+}
+
+export function setSharedProp(key, value) {
+  const inst = getCurrentInstance();
+
+  if (!inst) {
+    globalSharedProps.set(key, value);
+    return;
+  }
+
+  return inst.setSharedProp(key, value);
+}
+
+export function unsetSharedProp(key) {
+  const inst = getCurrentInstance();
+
+  if (!inst) {
+    globalSharedProps.delete(key);
+    return;
+  }
+
+  return inst.unsetSharedProp(key);
+}
+
+export function getSharedProp(key, fallback) {
+  const inst = getCurrentInstance();
+
+  if (!inst) {
+    return globalSharedProps.get(key);
+  }
+
+  return inst.getSharedProp(key, fallback);
+}
+
+export function listSharedProps() {
+  const inst = getCurrentInstance();
+
+  if (!inst) {
+    return new Map(globalSharedProps);
+  }
+
+  return inst.listSharedProps();
 }

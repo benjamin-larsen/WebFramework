@@ -102,9 +102,11 @@ function patchComponent(parentNode, nextNode, prevNode, index) {
     nextNode.instance = prevNode.instance;
     nextNode.instance.vnode = nextNode;
   } else {
+    const currentInstance = getCurrentInstance();
     nextNode.instance = new ComponentInstance(
       nextNode,
-      getCurrentInstance().level + 1
+      currentInstance.level + 1,
+      currentInstance
     );
   }
 

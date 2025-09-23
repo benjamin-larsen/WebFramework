@@ -13,7 +13,7 @@ export class RootContainer {
 
     this.el = el;
 
-    this.instance = new ComponentInstance(this, 0);
+    this.instance = new ComponentInstance(this, 0, null);
   }
 }
 

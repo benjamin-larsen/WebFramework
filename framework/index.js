@@ -23,7 +23,13 @@ export {
 export { withoutTracking } from './effect.js';
 export { default as Debugger } from './debug/index.js';
 export { usePlugin } from './plugins.js';
-export { default as nModel } from './standardDirectives/nModel.js'
+export { default as nModel } from './standardDirectives/nModel.js';
+export {
+  setSharedProp,
+  unsetSharedProp,
+  getSharedProp,
+  listSharedProps
+} from './component.js';
 
 import {
   RootContainer,
