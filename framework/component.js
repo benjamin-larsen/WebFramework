@@ -9,8 +9,9 @@ import { registerHMRComponent, removeHMRComponent } from './hmr.js';
 import { shallowReadonly } from './reactive.js';
 
 const globalSharedProps = new Map();
+export const globalProperties = {};
 
-const reservedProps = new Set(['methods', 'data', 'props']);
+const reservedProps = new Set(['methods', 'data', 'props', 'global']);
 
 const methodsProxyHandler = {
   get(instance, prop) {
@@ -71,6 +72,10 @@ const instanceProxyHandler = {
         return shallowReadonly(instance.vnode.properties);
       }
 
+      case 'global': {
+        return globalProperties;
+      }
+
       case '$set': {
         return ComponentInstance.prototype.setSharedProp.bind(instance);
       }
@@ -97,7 +102,7 @@ const instanceProxyHandler = {
     }
 
     if (prop[0] === '$') {
-      return undefined;
+      return globalProperties[prop];
     }
 
     if (prop in instance.data) {
