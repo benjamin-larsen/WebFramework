@@ -4,7 +4,7 @@ const inputListener = Symbol('inputListener');
 
 export default {
   beforeMount(el, binding) {
-    const invoker = function (e) {
+    const invoker = function () {
       if (!isRef(invoker.model)) {
         console.warn('nModel must be provided with Ref, not value.');
         return;
@@ -36,7 +36,7 @@ export default {
     el.value = binding.value.value;
   },
 
-  onDestroy() {
+  onDestroy(el) {
     el.removeEventListener('input', el[inputListener]);
     delete el[inputListener];
   }

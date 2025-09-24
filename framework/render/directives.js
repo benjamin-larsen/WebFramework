@@ -31,7 +31,7 @@ class ReactiveDirective {
       );
 
       this.status = INSTANCE_STATES.SYNCED;
-    } catch {
+    } catch (e) {
       console.log('Error occured while running Directive Hook: onReact', e);
     }
   }
