@@ -290,3 +290,10 @@ export function listSharedProps() {
 
   return inst.listSharedProps();
 }
+
+export function isComponent(comp) {
+  if (comp === null || typeof comp !== 'object') return false;
+  if (typeof comp.render !== 'function') return false;
+
+  return true;
+}

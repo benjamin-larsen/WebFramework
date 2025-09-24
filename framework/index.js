@@ -28,7 +28,8 @@ export {
   setSharedProp,
   unsetSharedProp,
   getSharedProp,
-  listSharedProps
+  listSharedProps,
+  isComponent
 } from './component.js';
 
 import {

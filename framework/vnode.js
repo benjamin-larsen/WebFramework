@@ -1,4 +1,4 @@
-import { ComponentInstance } from './component.js';
+import { ComponentInstance, isComponent } from './component.js';
 import { REACTIVE_FLAGS, EMPTY_PROPS } from './constants.js';
 import standardComponents from './standardComponents/index.js';
 import { isRef } from './reactive.js';
@@ -6,6 +6,9 @@ import { destroyDirective } from './render/directives.js';
 
 export class RootContainer {
   constructor(component, el, props) {
+    if (!isComponent(component))
+      throw Error('Provided Root Component is not a Component.');
+
     this.component = component;
     this.properties = props;
     this.children = [];
@@ -136,6 +139,9 @@ export class TextNode {
 
 export class ComponentNode {
   constructor(component, properties, slots) {
+    if (!isComponent(component))
+      throw Error('Provided Component is not a Component.');
+
     if (
       component[REACTIVE_FLAGS.IS_REACTIVE] ||
       component[REACTIVE_FLAGS.IS_READONLY]
