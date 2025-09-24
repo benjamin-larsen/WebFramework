@@ -29,12 +29,12 @@ export function root(component, queryOrElement, props) {
   return new RootContainer(component, element, props || EMPTY_PROPS);
 }
 
-export function head(component) {
-  return new RootContainer(component, document.head);
+export function head(component, props) {
+  return new RootContainer(component, document.head, props || EMPTY_PROPS);
 }
 
-export function body(component) {
-  return new RootContainer(component, document.body);
+export function body(component, props) {
+  return new RootContainer(component, document.body, props || EMPTY_PROPS);
 }
 
 export class FragmentNode {
