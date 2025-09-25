@@ -3,7 +3,8 @@ import { INSTANCE_STATES } from './constants.js';
 import {
   DependencySubscriber,
   withoutTracking,
-  getCurrentInstance
+  getCurrentInstance,
+  setCurrentInstance
 } from './effect.js';
 import { registerHMRComponent, removeHMRComponent } from './hmr.js';
 import { shallowReadonly } from './reactive.js';
@@ -180,22 +181,34 @@ export class ComponentInstance {
   callHook(hookName, ...args) {
     if (!this.vnode) return false;
 
-    if (typeof this.vnode.component[hookName] === 'function') {
-      try {
-        withoutTracking(
-          this.vnode.component[hookName].bind(this.public, this.public, ...args)
-        );
-      } catch (e) {
-        console.log(
-          `Error occured while running Lifecycle Hook: ${hookName}`,
-          e
-        );
-      }
-
-      return true;
+    const shouldSetInstance = getCurrentInstance() !== this;
+    let prevInstance = null;
+    if (shouldSetInstance) {
+      prevInstance = setCurrentInstance(this);
     }
 
-    return false;
+    try {
+      if (typeof this.vnode.component[hookName] === 'function') {
+        try {
+          withoutTracking(
+            this.vnode.component[hookName].bind(this.public, this.public, ...args)
+          );
+        } catch (e) {
+          console.log(
+            `Error occured while running Lifecycle Hook: ${hookName}`,
+            e
+          );
+        }
+
+        return true;
+      }
+
+      return false;
+    } finally {
+      if (shouldSetInstance) {
+        setCurrentInstance(prevInstance);
+      }
+    }
   }
 
   setSharedProp(key, value) {
