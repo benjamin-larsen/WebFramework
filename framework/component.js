@@ -191,7 +191,11 @@ export class ComponentInstance {
       if (typeof this.vnode.component[hookName] === 'function') {
         try {
           withoutTracking(
-            this.vnode.component[hookName].bind(this.public, this.public, ...args)
+            this.vnode.component[hookName].bind(
+              this.public,
+              this.public,
+              ...args
+            )
           );
         } catch (e) {
           console.log(
