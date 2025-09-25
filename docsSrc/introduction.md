@@ -7,7 +7,7 @@ Web Framework is a project of mine I've worked on since about August 18th, 2025.
 
 To create a new Noctes.jsx App run this in console:
 ```sh
-$ npm create noctes.jsx@latest
+$ npm create noctes-jsx@latest
 ```
 
 
