@@ -50,8 +50,10 @@ function patchElement(parentNode, nextNode, prevNode, index) {
     patch(prevNode, nextChildren);
     patchProps(prevNode, nextNode);
 
-    // After done patching props, set prev properties to new, will need to reform this.
+    // After done patching props and directivse, set prev properties, invokers and dirs to new, will need to reform this.
     prevNode.properties = nextNode.properties;
+    prevNode.eventInvokers = nextNode.eventInvokers;
+    prevNode.dirs = nextNode.dirs;
 
     finishElementDirectives(prevNode, nextNode);
 
