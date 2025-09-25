@@ -1,8 +1,8 @@
 export const RESERVED_PROPS = new Set(['key']);
 
-const BUILD_MODES = { DEV: 'development', ALPHA: 'alpha' };
+const BUILD_MODES = { DEV: 'development', ALPHA: 'alpha', STABLE: 'stable' };
 
-export const META = { mode: BUILD_MODES.ALPHA, version: '0.2.0' };
+export const META = { mode: BUILD_MODES.STABLE, version: '1.0.0' };
 
 export const INSTANCE_STATES = {
   BEFORE_MOUNT: 0,
