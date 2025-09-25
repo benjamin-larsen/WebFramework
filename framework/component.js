@@ -226,7 +226,7 @@ export class ComponentInstance {
   }
 
   getSharedProp(key, fallback) {
-    for (let currInst = this; currInst; currInst = currInst.parent) {
+    for (let currInst = this.parent; currInst; currInst = currInst.parent) {
       if (!currInst.shared) continue;
 
       if (currInst.shared.has(key)) return currInst.shared.get(key);
@@ -240,7 +240,7 @@ export class ComponentInstance {
   listSharedProps() {
     const map = new Map();
 
-    for (let currInst = this; currInst; currInst = currInst.parent) {
+    for (let currInst = this.parent; currInst; currInst = currInst.parent) {
       if (!currInst.shared) continue;
 
       for (const [key, value] of currInst.shared) {
