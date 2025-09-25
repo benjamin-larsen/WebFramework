@@ -3,20 +3,12 @@
 layout: home
 
 hero:
-  name: "WebFramework API"
-  text: "Docuemntation of WebFramework"
-  tagline: Development Build 0.1.14
+  name: "Noctes.jsx API"
+  text: "Docuemntation of Noctes.jsx"
+  tagline: Stable Build 1.0.0
   actions:
     - theme: brand
       text: Introduction
       link: /introduction
-
-features:
-  - title: Feature A
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  - title: Feature B
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  - title: Feature C
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
 ---
 
