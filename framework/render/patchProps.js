@@ -103,7 +103,7 @@ function patchEvent(prevNode, nextNode, propName, listenerFn) {
 
   if (typeof listenerFn !== 'function') {
     if (hasPrevInvoker && prevNode.el) {
-      prevNode.el.removeEventListener(eventName, prevNode.properties[propName]);
+      prevNode.el.removeEventListener(eventName, prevNode.eventInvokers[eventName]);
       delete prevNode.eventInvokers[eventName];
     }
 
