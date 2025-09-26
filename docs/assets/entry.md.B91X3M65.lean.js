@@ -1,0 +1,1 @@
+import{_ as i,c as a,o as n,af as t}from"./chunks/framework.E1DTXEdm.js";const y=JSON.parse('{"title":"Entrypoint","description":"","frontmatter":{},"headers":[],"relativePath":"entry.md","filePath":"entry.md"}'),e={name:"entry.md"};function p(l,s,h,k,r,o){return n(),a("div",null,[...s[0]||(s[0]=[t("",4)])])}const E=i(e,[["render",p]]);export{y as __pageData,E as default};

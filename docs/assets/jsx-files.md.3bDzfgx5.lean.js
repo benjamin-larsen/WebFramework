@@ -1,1 +1,0 @@
-import{_ as i,c as a,o as n,af as t}from"./chunks/framework.E1DTXEdm.js";const g=JSON.parse('{"title":"JSX","description":"","frontmatter":{},"headers":[],"relativePath":"jsx-files.md","filePath":"jsx-files.md"}'),l={name:"jsx-files.md"};function e(h,s,p,k,r,E){return n(),a("div",null,[...s[0]||(s[0]=[t("",6)])])}const o=i(l,[["render",e]]);export{g as __pageData,o as default};
