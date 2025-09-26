@@ -1,7 +1,7 @@
 # JSX
 A JSX file defines a Noctes.jsx Component, it should export default a object with a render() function and lifecycle hooks (refer to [API](/api-component.html#components)).
 
-To declare string expressions use ${}, to declare children expressions use {}, return null to declare Empty Slot.
+To declare string expressions use `${}`, to declare children expressions use `{}`, return `null` to declare Empty Slot.
 
 Render functions takes in three paramaters:
 <br>
@@ -11,7 +11,7 @@ Render functions takes in three paramaters:
 <br>
 **slots** - A object of component slots, please refer to [API](/api-component.html#render-slots) for more information.
 
-# Example
+**Example**
 ```jsx
 import { ref } from 'noctes.jsx'
 

@@ -1,5 +1,9 @@
+---
+outline: deep
+---
+
 # Components
-The Component is the fundemental building block of Noctes.jsx, at it's core a Component is a Object with a render() method, optional lifecycle hook methods and optional "methods" object with user-defined methods.
+The Component is the fundemental building block of Noctes.jsx, at its core a Component is a Object with a render() method, optional lifecycle hook methods and optional "methods" object with user-defined methods.
 ```ts
 interface Component {
   render: RenderFunction;
@@ -59,7 +63,7 @@ interface Component {
   onDestroy?: (this: ComponentContext, ctx: ComponentContext) => void;
 
   methods?: {
-    [key: any]: (this: ComponentContext, ...args: any[]) => any
+    [key: string]: (this: ComponentContext, ...args: any[]) => any
   }
 }
 ```
@@ -82,7 +86,7 @@ declare class ComponentContext {}
 
 This is a explanation / template of "Render Functions".
 
-Props will be a immutable object, currently Root Components (children of class App) props will be undefined.
+Props must not be changed, and must be immutable.
 
 Render Functions must always return an array, wether empty or not. The array can contain VNode and null.
 ```ts
@@ -90,11 +94,11 @@ type RenderFunction = (
   this: ComponentContext,
   ctx: ComponentContext,
   props: Readonly<Object>,
-  slots: Object
-) => (VNode | null)[]
+  slots: ComponentSlots
+) => Fragment
 ```
 
-Example
+**Example**
 ```js{4-8}
 import { v } from 'noctes.jsx'
 
@@ -105,4 +109,80 @@ export default {
     ]
   }
 }
+```
+
+### **Empty Slots**
+
+Empty slots are null values inside of Fragments, used to tell Noctes.jsx that there is a VNode reserved to be in that position, that way when that VNode is mounted (for example a condition is furfilled), Noctes.jsx doesn't have to move and unmount alot of things unnecessarily.
+```ts
+/**
+ * Empty Slots are just the value ("null").
+ */
+type EmptySlot = null;
+```
+
+### **Fragment**
+
+A fragment is an array of VNode and Empty Slots (null) used in VNode children or returned by render functions, fragments can also be inside of other fragments.
+
+When rendering lists alongside other elements in one Container Element, you should wrap the list in a Fragment.
+```ts
+/**
+ * Fragments are an array of either VNode, other Fragments or Empty Slots.
+ * 
+ * Used by Render Function, VNode Children and nested fragments
+   (technically speaking, all Fragments except Root Component
+   are nested fragments).
+ */
+type Fragment = (VNode | Fragment | EmptySlot)[];
+```
+
+### **VNode**
+
+VNodes in render functions are either of type Element Node, Component Node, string (converted to Text Node by Noctes.jsx) or array (converted to Fragment Node by Noctes.jsx).
+
+Properties must be immutable, new properties shall be passed with a new object.
+
+You can make Element or Component VNodes with the following functions:
+```ts
+/* Alias: e() */
+function createElement(
+  tag: string,
+  properties: Readonly<Object> | null,
+  ...children: Fragment
+): ElementNode
+
+/* Alias: c() */
+/**
+ * component would only ever be string if the first character is uppercase, and is one of the Standard Components such as ("Lazy").
+ */
+function createComponent(
+  component: Component | string,
+  properties: Readonly<Object> | null,
+  slots?: ComponentSlots
+): ComponentNode
+
+/* Alias: v() */
+/**
+ * component can only be passed as string if it's part of Standard Components such as ("Lazy"), if it's not it will be interpeted as a tag for Element Node.
+ */
+function createVNode(
+  component: Component | string,
+  properties: Readonly<Object> | null,
+  slots?: ComponentSlots
+): ComponentNode
+
+/**
+ * If the 2nd argument is not a direct Object (constructor is Object) it will interpit it as no properties and set children as rest of arguments.
+ */
+function createVNode(
+  tag: string,
+  ...children: Fragment
+): ElementNode
+
+function createVNode(
+  tag: string,
+  properties: Readonly<Object>,
+  ...children: Fragment
+): ElementNode
 ```

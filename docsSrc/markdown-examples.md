@@ -1,85 +1,128 @@
-# Markdown Extension Examples
+# Useful APIs
 
-This page demonstrates some of the built-in markdown extensions provided by VitePress.
+## **new App()** <Badge type="tip" text="a9e9c83+" />
 
-## Syntax Highlighting
-
-VitePress provides Syntax Highlighting powered by [Shiki](https://github.com/shikijs/shiki), with additional features like line-highlighting:
-
-**Input**
-
-````md
-```js{4}
-export default {
-  data () {
-    return {
-      msg: 'Highlighted!'
-    }
-  }
-}
-```
-````
-
-**Output**
-
-```js{4}
-export default {
-  data () {
-    return {
-      msg: 'Highlighted!'
-    }
-  }
+The arguments for the constructor is gonna be a variadic list of Root Nodes, Root Nodes are currently either HeadElement or BodyElement. There are functions body and head which can be imported that creates these Root Nodes.
+```ts
+declare class App {
+  constructor(...children: RootNode[])
+  /**
+   * Prints a Basic Layout of the Virtual DOM Tree in console.
+   */
+  print()
+  /**
+   * Renders the application to the DOM.
+   * IMPORTANT! Must only call once.  
+   */
+  render()
 }
 ```
 
-## Custom Containers
+Example
+```js
+import { App, body, v } from 'webframework'
 
-**Input**
+const app = new App(
+  body(() => [
+    v("div", "test")
+  ])
+)
 
-```md
-::: info
-This is an info box.
-:::
-
-::: tip
-This is a tip.
-:::
-
-::: warning
-This is a warning.
-:::
-
-::: danger
-This is a dangerous warning.
-:::
-
-::: details
-This is a details block.
-:::
+app.render()
 ```
 
-**Output**
+## VNodes
 
-::: info
-This is an info box.
-:::
+## Element Properties
 
-::: tip
-This is a tip.
-:::
 
-::: warning
-This is a warning.
-:::
+## **Components** <Badge type="tip" text="98c2ab1+" />
 
-::: danger
-This is a dangerous warning.
-:::
+Components are an object with various methods, for all these methods the "this" variable will be of their Component Instance. It is highly advised to not mess with properties of "this" except "this.data" which is a object that is controlled by the Component.
+```ts
+interface Component {
+  render: RenderFunction;
+  /**
+   * Lifecycle hook that is called during the creation of ComponentInstance, and is the first ever hook to be called, even before first render.
+   * This is where you should setup "this.data".
+   */
+  onCreated?: (this: ComponentInstance, props: Object) => void;
+  /**
+   * Lifecycle hook that is called when the Component has first been rendered.
+   */
+  onMounted?: (this: ComponentInstance, props: Object) => void;
+  /**
+   * Lifecycle hook that is called when the Component has been re-rendered.
+   */
+  onUpdated?: (this: ComponentInstance, props: Object) => void;
+  /**
+   * Lifecycle hook that is called after Component has been unmounted, and before Component Instance is destroyed.
+   */
+  onDestroy?: (this: ComponentInstance) => void;
+}
+```
 
-::: details
-This is a details block.
-:::
+## **Component Instance** <Badge type="tip" text="2dbcb58+" />
 
-## More
+Component Instance are created when the first VNode for a specific component at same position appears, and is destroyed when the VNode of same component and same position is no longer found.
 
-Check out the documentation for the [full list of markdown extensions](https://vitepress.dev/guide/markdown).
+It carries information like Effects (reactive subscriptions), Component Data (data used by Component) and properties.
+
+Here is a list of properties and methods of Component Instance (there are several more internals that you are advised to not use)
+```ts
+declare class ComponentInstance {
+  constructor(vnode: VNode, level: Number)
+  /**
+   * The underlying current VNode (or RootNode) of the Component Instance.
+   * Note: The VNode changes every render.
+   */
+  vnode: VNode
+  /**
+   * The depth level of the component.
+   * Example:
+   * Body (level 0)
+   *  - div (level 0)
+   *     - Component (level 1)
+   */
+  level: Number
+  /**
+   * Component Data that is managed by the Component Itself
+   */
+  data: Object
+  /**
+   * Returns function from cache, or saves the function in cache and returns the func variable.
+   * Force will ignore the cache, and save regardless
+   * You can use any key, but don't use conflicting keys.
+   * The purpose of this is to prevent re-declaring functions each render. Could perhaps have a methods object in Component in the future.
+   */
+  getFn(key: Any, func: Function, force?: Boolean)
+  /**
+   * Forces re-render of component.
+   */
+  $forceUpdate()
+}
+```
+
+## **Render Function** <Badge type="info" text="Conceptual" /> <Badge type="tip" text="4fda909+" />
+
+This is a explanation / template of "Render Functions".
+
+Props will be a immutable object, currently Root Components (children of class App) props will be undefined.
+
+Render Functions must always return an array, wether empty or not. The array can contain VNode and null.
+```ts
+type RenderFunction = (this: ComponentInstance, props: Object) => (VNode | null)[]
+```
+
+Example
+```js{4-8}
+import { v } from 'webframework'
+
+export default {
+  render(props) { // [!code focus:5]
+    return [
+      v("div", `props.a is ${props.a}`)
+    ]
+  }
+}
+```
