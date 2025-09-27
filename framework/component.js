@@ -106,15 +106,15 @@ const instanceProxyHandler = {
       return globalProperties[prop];
     }
 
+    if (prop in instance.vnode.component.methods) {
+      return instance.publicMethods[prop];
+    }
+
     if (prop in instance.data) {
       return instance.data[prop];
     }
 
-    if (prop in instance.vnode.properties) {
-      return instance.vnode.properties[prop];
-    }
-
-    return instance.publicMethods[prop];
+    return instance.vnode.properties[prop];
   },
 
   set(instance, prop, value) {
