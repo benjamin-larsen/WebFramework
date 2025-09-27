@@ -69,8 +69,88 @@ interface Component {
 ```
 
 ## **Shared Properties**
+Shared Properties are properties that are shared from ancestor component to descenadant component. This prevents the need of "Prop Drilling" (passing props down from Child to Child to get to its destination).
+
+A component may only set Shared Properties of its own provides, and may only get the provides of it's ancestors. There are also Global Shared Properties (which are Shared Properties accesible at the Root Level).
+
+If there are duplicate keys of the same on multiple levels, the nearest ancestor will take priority (or Global Properties in case that no ancestor has said key). And in the get shared property function you may define a fallback, where it would have following priority:
+1) Nearest Ancestor's Provideds
+2) Global Provides
+3) Fallback Value
+
+The following functions may be used to Get and Set Shared Properties.
+::: warning
+Only use these functions in synchronous Plugin Installer, or Component Methods, Lifecycle Hook or Render Function, and shall not be used outside the scope of said functions for example not in setTimeout, setInterval, queueMicrotask or any other function that is not ran immediately.
+
+In order to ensure that no problems arise, it is reccomended you use Component Context methods.
+
+Refer to [Component Context](/api-component.html#component-context) methods for async.
+
+Technical Details:
+These functions access a variable ("currentInstance"), which is never left with a non-null variable when Call Stack is emptied, async runs in Microtasks which is queue by the Event Loop to be run when the Call Stack is emptied, therefore you'd be setting Global Shared Properties.
+:::
+```ts
+type Key = string | symbol | number;
+
+function setSharedProp<T>(key: Key, value: T): void
+
+function unsetSharedProp(key: Key): void
+
+function getSharedProp<T>(key: Key, fallback?: T): T | undefined
+
+function listSharedProps(): Map<Key, any>
+```
 
 ## **Render Slots**
+A Render Slot is a View that is generated and provided by the Parent Component and used by the Child Component at a location designated by the Child Component.
+
+**Example**
+::: code-group
+
+```jsx [App.jsx]
+import ChildComponent from './child.jsx'
+
+export default {
+  render(ctx, props, slots) {
+    return (
+    <>
+    <ChildComponent>
+      <slot>
+        <div>Hello World</div>
+      </slot>
+      <slot:footer>
+        This is footer text.
+      </slot:footer>
+    </ChildComponent>
+    </>
+    )
+  }
+}
+```
+
+```jsx [child.jsx]
+export default {
+  render(ctx, props, slots) {
+    return (
+    <>
+    <div>Default Slot: {slots.default}</div>
+    <div>Footer Slot: {slots.footer}</div>
+    </>
+    )
+  }
+}
+```
+:::
+
+**Resulting HTML**
+```html
+<div>
+  Default Slot: <div>Hello World</div>
+</div>
+<div>
+  Footer Slot: This is footer text.
+</div>
+```
 
 ## **Component Context**
 Component Context is a proxied Component Instance, that is provided to Lifecycle Hooks, Methods and Render Function.
@@ -79,7 +159,96 @@ Component Instance are created when the first VNode for a specific component at 
 
 Component Instance carries information like Effects (reactive subscriptions), Component Data (data used by Component) and properties.
 ```ts
-declare class ComponentContext {}
+type AccessKey = string | symbol | number;
+
+interface ComponentContext { 
+  /**
+   * Component Methods defined in Component Interface
+   */
+  methods: {
+    [key: string]: (this: ComponentContext, ...args: any[]) => any
+  },
+
+  /**
+   * Instance Data:
+   * An object used to store Instance-specific data.
+     This is only utilized by the Component itself.
+   */
+  data: Object,
+
+  /**
+   * Shallow Readonly object of Component Properties.
+   * 
+   * Component Properties are passed as a Shallow Readonly object in order to
+     prevent any accidental overrides (which can cause internal problems).
+   */
+  props: Readonly<Object>,
+
+  /**
+   * Global Properties is a regular Object, same as import { globalProperties }.
+   * 
+   * Global Properties are typically declared by Plugins,
+     but components can declare Global Properties too.
+   */
+  global: {
+    [key: AccessKey]: any
+  },
+
+  /**
+   * Sets a Shared Property.
+   * 
+   * Shared Properties may only be accesed by descandent components.
+   */
+  $set<T>(key: AccessKey, value: T): void,
+
+  /**
+   * Deletes / unsets a Shared Property.
+   * 
+   * Only affects $get and $list of descandent components like $set.
+   */
+  $unset(key: AccessKey): void,
+
+  /**
+   * Gets a Shared Property.
+   * 
+   * Returns the Nearest Ancestor's value of the key,
+     if none of the Ancestors have the key,
+     it will return from Global Shared Properties.
+   * If no value can be found in either any Ancestor or Global Shared Properties,
+     it will return the Fallback Value.
+   */
+  $get<T>(key: AccessKey, fallback?: T): T | undefined,
+
+  /**
+   * Returns a Map of all the Shared Properties
+     that this component can access (incuding values).
+   */
+  $list(): Map<AccessKey, any>,
+
+  /**
+   * Forces a re-render of the Component in next Animation Frame
+     (wether or not properties changed or reactive dependency has been changed).
+   */
+  $forceUpdate(): void,
+
+  /**
+   * Gets the underlying Component Instance.
+   * IMPORTANT! Use with caution.
+   */
+  $raw: ComponentInstance,
+
+  /**
+   * This is the default case, which has two ways of being handled:
+   * Getter: If first letter is $ it indicates a global / reserved property,
+     it will search in global. If not it will look in Component Methods,
+     Instance Data or Component Properties (in that order).
+   * 
+   * Setter: If first letter is $ it indicates a global / reserved property,
+     throw error. If not it will set the key provided in Instance Data
+     to the value provided.
+   */
+  [key: AccessKey]: any
+}
 ```
 
 ## **Render Function**

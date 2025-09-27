@@ -43,6 +43,7 @@ export default defineConfig({
         items: [
           { text: "App", link: '/api-app' },
           { text: "Components", link: '/api-component' },
+          { text: "Directives", link: '/api-directives' },
           { text: "JSX", link: '/api-jsx' },
           { text: "Reactivity", link: '/api-reactivity' }
         ]

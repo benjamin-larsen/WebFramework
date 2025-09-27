@@ -17,3 +17,7 @@ $ npm create noctes-jsx@latest
 Components including Root Containers are made in .jsx files, with a export default object with a render() method, the render function should return a Fragment `<> ... </>` (which is just an Array, you could likewise just return an Array `[ ... ]`).
 
 However when you return an Array (`[ ... ]`) instead of a Fragment (`<> ... </>`), you write Text manually, you can write Fragments and other VNodes like normal tho, Array is comma-seperated like normal arrays.
+
+
+# Use of TypeScript in Documentation
+In this documentation, we use alot of TypeScript to show how various APIs and objects are structured, however these types are not actually from the Framework, the Framework is written in Plain JavaScript, and the TypeScript is only to explain the sturcture.
