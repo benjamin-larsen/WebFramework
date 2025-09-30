@@ -1,0 +1,20 @@
+{
+  "name": "noctes.jsx",
+  "version": "0.0.3",
+  "type": "module",
+  "description": "Web Framework made in Vanilla JavaScript",
+  "main": "framework/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/benjamin-larsen/Noctes.jsx.git"
+  },
+  "author": "Benjamin Larsen",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/benjamin-larsen/Noctes.jsx/issues"
+  },
+  "homepage": "https://github.com/benjamin-larsen/Noctes.jsx#readme"
+}
