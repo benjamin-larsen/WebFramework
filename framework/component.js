@@ -339,7 +339,7 @@ export function withContext(func, ctx) {
     const prevInstance = setCurrentInstance(instance);
 
     try {
-      return func.apply(instance, args);
+      return func.apply(instance.public, args);
     } finally {
       setCurrentInstance(prevInstance);
     }
