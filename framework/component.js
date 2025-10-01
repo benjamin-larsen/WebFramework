@@ -33,6 +33,18 @@ const methodsProxyHandler = {
     }
   },
 
+  has(instance, prop) {
+    const methods = instance.vnode.component.methods;
+    if (
+      methods === null ||
+      typeof methods !== 'object' ||
+      methods.constructor !== Object
+    )
+      return false;
+
+    return Reflect.has(instance.vnode.component.methods, prop);
+  },
+
   set() {
     throw Error("Can't override Component Methods.");
   },
@@ -106,7 +118,7 @@ const instanceProxyHandler = {
       return globalProperties[prop];
     }
 
-    if (prop in instance.vnode.component.methods) {
+    if (prop in instance.publicMethods) {
       return instance.publicMethods[prop];
     }
 
