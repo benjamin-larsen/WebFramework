@@ -185,7 +185,7 @@ export default {
 **Example with Raw Render Functions**
 ::: code-group
 
-```jsx [App.js]
+```js [App.js]
 import { e, c, withContext } from 'noctes.jsx'
 import ChildComponent from './child.js'
 
@@ -204,7 +204,7 @@ export default {
 }
 ```
 
-```jsx [child.js]
+```js [child.js]
 import { e } from 'noctes.jsx'
 
 export default {
