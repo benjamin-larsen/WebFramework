@@ -331,3 +331,17 @@ export function isComponent(comp) {
 
   return true;
 }
+
+export function withContext(func, ctx) {
+  const instance = ctx || getCurrentInstance();
+
+  return function (...args) {
+    const prevInstance = setCurrentInstance(instance);
+
+    try {
+      return func.apply(instance, args);
+    } finally {
+      setCurrentInstance(prevInstance);
+    }
+  }
+}

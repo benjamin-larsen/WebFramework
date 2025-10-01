@@ -30,7 +30,8 @@ export {
   getSharedProp,
   listSharedProps,
   isComponent,
-  globalProperties
+  globalProperties,
+  withContext
 } from './component.js';
 
 import {
