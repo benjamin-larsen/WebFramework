@@ -20,19 +20,24 @@ export function findAnchor(oldRender, index) {
 }
 
 // Make better and more efficent system later, perhaps using two-phase rendering
-function findComponentAnchor(component) {
-  if (
+function findComponentAnchor(initComponent) {
+  let component = initComponent;
+
+  while (true) {
+    if (
     !component ||
     (component.constructor !== ComponentNode &&
       component.constructor !== FragmentNode)
   )
     return null;
-  const anchor = findAnchor(component.parent.children, component.index);
 
-  if (anchor) {
-    return anchor;
-  } else {
-    return findComponentAnchor(component.parent);
+    const anchor = findAnchor(component.parent.children, component.index);
+
+    if (anchor) {
+      return anchor;
+    } else {
+      component = component.parent;
+    }
   }
 }
 
