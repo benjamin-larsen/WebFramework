@@ -69,6 +69,8 @@ function patchStyles(prevNode, nextNode, rawStyles) {
 }
 
 function resolveAttributeName(attrName) {
+  if (attrName === 'xmlns') return NAMESPACES.xmlns;
+
   const parts = attrName.split(':');
 
   if (parts.length > 1 && NAMESPACES[parts[0]]) {
