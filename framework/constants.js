@@ -22,3 +22,14 @@ export const REACTIVE_FLAGS = {
 
 export const EMPTY_PROPS = Object.freeze({});
 export const EMPTY_ARR = Object.freeze([]);
+
+export const NAMESPACES = {
+  html: 'http://www.w3.org/1999/xhtml',
+  svg: 'http://www.w3.org/2000/svg',
+  math: 'http://www.w3.org/1998/Math/MathML',
+  xlink: 'http://www.w3.org/1999/xlink',
+  xml: 'http://www.w3.org/XML/1998/namespace',
+  xmlns: 'http://www.w3.org/2000/xmlns/'
+};
+
+export const NAMESPACES_TAGS = { svg: NAMESPACES.svg, math: NAMESPACES.math };

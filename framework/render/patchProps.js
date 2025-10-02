@@ -1,4 +1,4 @@
-import { RESERVED_PROPS } from '../constants.js';
+import { RESERVED_PROPS, NAMESPACES } from '../constants.js';
 import { isRef } from '../reactive.js';
 
 function patchClassName(prevNode, nextNode, classList) {
@@ -68,12 +68,28 @@ function patchStyles(prevNode, nextNode, rawStyles) {
   nextNode.el.style.cssText = computedStyle;
 }
 
+function resolveAttributeName(attrName) {
+  const parts = attrName.split(':');
+
+  if (parts.length > 1 && NAMESPACES[parts[0]]) {
+    return NAMESPACES[parts[0]];
+  }
+
+  return null;
+}
+
 function patchAttribute(prevNode, nextNode, attr, value) {
+  const attrNamespace = resolveAttributeName(attr);
+
   const hasPrevAttr = prevNode && prevNode.properties[attr];
 
   if (value === null || value === undefined) {
     if (hasPrevAttr && prevNode.el) {
-      prevNode.el.removeAttribute(attr);
+      if (attrNamespace) {
+        prevNode.el.removeAttributeNS(attrNamespace, attr);
+      } else {
+        prevNode.el.removeAttribute(attr);
+      }
     }
 
     return;
@@ -81,7 +97,11 @@ function patchAttribute(prevNode, nextNode, attr, value) {
 
   if (hasPrevAttr && prevNode.properties[attr] === value) return;
 
-  nextNode.el.setAttribute(attr, value);
+  if (attrNamespace) {
+    nextNode.el.setAttributeNS(attrNamespace, attr, value);
+  } else {
+    nextNode.el.setAttribute(attr, value);
+  }
 }
 
 function createInvoker(func, node) {
@@ -136,7 +156,7 @@ function isEvent(propName) {
   return true;
 }
 
-export function patchProp(prevNode, nextNode, prop, value) {
+export function patchProp(prevNode, nextNode, prop, value, namespace) {
   if (RESERVED_PROPS.has(prop)) return;
 
   if (isEvent(prop)) {
@@ -156,7 +176,7 @@ export function patchProp(prevNode, nextNode, prop, value) {
     if (isRef(value)) {
       value.value = nextNode.el;
     }
-  } else if (prop === 'class') {
+  } else if (prop === 'class' && namespace !== NAMESPACES.svg) {
     patchClassName(prevNode, nextNode, value);
   } else if (prop === 'style') {
     patchStyles(prevNode, nextNode, value);
@@ -165,7 +185,7 @@ export function patchProp(prevNode, nextNode, prop, value) {
   }
 }
 
-export function patchProps(prevNode, nextNode) {
+export function patchProps(prevNode, nextNode, namespace) {
   if (prevNode && prevNode.properties === nextNode.properties) return;
 
   for (const prop in nextNode.properties) {
@@ -173,7 +193,7 @@ export function patchProps(prevNode, nextNode) {
 
     if (value === null || value === undefined) continue;
 
-    patchProp(prevNode, nextNode, prop, value);
+    patchProp(prevNode, nextNode, prop, value, namespace);
   }
 
   if (prevNode) {
@@ -182,7 +202,7 @@ export function patchProps(prevNode, nextNode) {
 
       if (nextProp !== null && nextProp !== undefined) continue;
 
-      patchProp(prevNode, nextNode, prop, null);
+      patchProp(prevNode, nextNode, prop, null, namespace);
     }
   }
 }

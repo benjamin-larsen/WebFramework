@@ -97,7 +97,7 @@ export function renderNode(node, force) {
       throw Error('Render function must return a Fragment.');
     }
 
-    patch(node, nextChildren);
+    patch(node, nextChildren, node.el.namespaceURI);
 
     const isMounted = node.instance.status === INSTANCE_STATES.BEFORE_MOUNT;
     node.instance.setStatus(INSTANCE_STATES.SYNCED);

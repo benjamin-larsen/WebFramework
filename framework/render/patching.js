@@ -9,7 +9,7 @@ import {
 } from '../vnode.js';
 import { ComponentInstance } from '../component.js';
 import { shallowCompareObj } from '../helpers.js';
-import { INSTANCE_STATES } from '../constants.js';
+import { INSTANCE_STATES, NAMESPACES, NAMESPACES_TAGS } from '../constants.js';
 import { shallowReadonly } from '../reactive.js';
 import { getCurrentInstance } from '../effect.js';
 import {
@@ -17,14 +17,14 @@ import {
   finishElementDirectives
 } from './directives.js';
 
-function patchFragment(parentNode, nextArray, prevNode, index) {
+function patchFragment(parentNode, nextArray, prevNode, index, namespace) {
   if (prevNode && prevNode.el) {
     prevNode.el = parentNode.el;
     prevNode.parent = parentNode;
     prevNode.index = index;
 
     refreshComponentAnchor(prevNode);
-    patch(prevNode, nextArray);
+    patch(prevNode, nextArray, namespace);
     return prevNode;
   } else {
     const nextNode = new FragmentNode();
@@ -33,13 +33,28 @@ function patchFragment(parentNode, nextArray, prevNode, index) {
     nextNode.index = index;
 
     refreshComponentAnchor(nextNode);
-    mount(nextNode, nextArray);
+    mount(nextNode, nextArray, namespace);
 
     return nextNode;
   }
 }
 
-function patchElement(parentNode, nextNode, prevNode, index) {
+function resolveElementTag(tag, namespace) {
+  const parts = tag.split(':');
+
+  if (parts.length > 1 && NAMESPACES[parts[0]]) {
+    tag = parts.slice(1).join(':');
+    namespace = NAMESPACES[parts[0]];
+  } else if (NAMESPACES_TAGS[tag]) {
+    namespace = NAMESPACES_TAGS[tag];
+  } else if (typeof namespace !== 'string') {
+    namespace = NAMESPACES.html;
+  }
+
+  return { tag, namespace };
+}
+
+function patchElement(parentNode, nextNode, prevNode, index, parentNamespace) {
   if (prevNode && prevNode.el && prevNode.tag === nextNode.tag) {
     const nextChildren = nextNode.children;
 
@@ -47,8 +62,8 @@ function patchElement(parentNode, nextNode, prevNode, index) {
     nextNode.el = prevNode.el;
 
     patchElementDirectives(prevNode, nextNode);
-    patch(prevNode, nextChildren);
-    patchProps(prevNode, nextNode);
+    patch(prevNode, nextChildren, nextNode.el.namespaceURI);
+    patchProps(prevNode, nextNode, nextNode.el.namespaceURI);
 
     // After done patching props and directivse, set prev properties, invokers and dirs to new, will need to reform this.
     prevNode.properties = nextNode.properties;
@@ -59,12 +74,14 @@ function patchElement(parentNode, nextNode, prevNode, index) {
 
     return prevNode;
   } else {
-    const el = document.createElement(nextNode.tag);
+    const { namespace, tag } = resolveElementTag(nextNode.tag, parentNamespace);
+
+    const el = document.createElementNS(namespace, tag);
     nextNode.el = el;
 
     patchElementDirectives(null, nextNode);
-    mount(nextNode, nextNode.children);
-    patchProps(null, nextNode);
+    mount(nextNode, nextNode.children, namespace);
+    patchProps(null, nextNode, namespace);
 
     parentNode.el.insertBefore(
       el,
@@ -194,7 +211,7 @@ function evalDiff(prevNode, nextNode) {
   return { isSame, prevKey, nextKey, nextType };
 }
 
-function mount(parentNode, nextChildren) {
+function mount(parentNode, nextChildren, namespace) {
   // Compute Key Map
   const keyMap = new Map();
 
@@ -227,7 +244,8 @@ function mount(parentNode, nextChildren) {
         parentNode,
         nextNode,
         null,
-        index
+        index,
+        namespace
       );
       continue;
     }
@@ -243,7 +261,8 @@ function mount(parentNode, nextChildren) {
         parentNode,
         nextNode,
         null,
-        index
+        index,
+        namespace
       );
     } else if (nextNode.constructor === ComponentNode) {
       parentNode.children[index] = patchComponent(
@@ -274,8 +293,9 @@ function resolveMatchedChild(prevNode, nextNode, nextType) {
   return prevNode;
 }
 
-export function patch(parentNode, nextChildren) {
-  if (parentNode.children.length === 0) return mount(parentNode, nextChildren);
+export function patch(parentNode, nextChildren, namespace) {
+  if (parentNode.children.length === 0)
+    return mount(parentNode, nextChildren, namespace);
   // Compute Key Map
   const keyMap = new Map();
   const unmountList = new Map();
@@ -355,7 +375,8 @@ export function patch(parentNode, nextChildren) {
         parentNode,
         nextNode,
         prevNode,
-        index
+        index,
+        namespace
       );
       continue;
     }
@@ -372,7 +393,8 @@ export function patch(parentNode, nextChildren) {
         parentNode,
         nextNode,
         prevNode,
-        index
+        index,
+        namespace
       );
     } else if (nextNode.constructor === ComponentNode) {
       parentNode.children[index] = patchComponent(
