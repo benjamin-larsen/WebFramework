@@ -25,11 +25,11 @@ function findComponentAnchor(initComponent) {
 
   while (true) {
     if (
-    !component ||
-    (component.constructor !== ComponentNode &&
-      component.constructor !== FragmentNode)
-  )
-    return null;
+      !component ||
+      (component.constructor !== ComponentNode &&
+        component.constructor !== FragmentNode)
+    )
+      return null;
 
     const anchor = findAnchor(component.parent.children, component.index);
 

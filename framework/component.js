@@ -343,5 +343,5 @@ export function withContext(func, ctx) {
     } finally {
       setCurrentInstance(prevInstance);
     }
-  }
+  };
 }
