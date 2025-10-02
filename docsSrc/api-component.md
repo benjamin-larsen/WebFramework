@@ -84,6 +84,8 @@ Only use these functions in synchronous Plugin Installer, or Component Methods, 
 
 In order to ensure that no problems arise, it is reccomended you use Component Context methods.
 
+These functions shall also NOT be used inside of Directive Hooks.
+
 Refer to [Component Context](/api-component.html#component-context) methods for async.
 
 Technical Details:
