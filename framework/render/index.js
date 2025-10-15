@@ -16,6 +16,26 @@ class RenderQueue {
     this.waiting = new Set();
     this.waitingDir = new Set();
     this.renderId = null;
+
+    this.flushPromise();
+  }
+
+  flushPromise() {
+    if (this.currentPromise) {
+      this.currentPromise.resolve()
+    }
+
+    let resolve, reject;
+    const promise = new Promise((res, rej) => {
+      resolve = res;
+      reject = rej;
+    })
+
+    this.currentPromise = {
+      promise,
+      resolve,
+      reject
+    }
   }
 
   process() {
@@ -40,6 +60,8 @@ class RenderQueue {
 
       dir.runReact(false);
     }
+
+    this.flushPromise();
 
     if (this.waiting.size > 0 || this.waitingDir.size > 0) {
       this.renderId = requestAnimationFrame(this.process.bind(this));
@@ -70,6 +92,12 @@ class RenderQueue {
 }
 
 export const renderQueue = new RenderQueue();
+
+export function nextTick() {
+  if (!renderQueue.currentPromise) throw Error("Unable to find Current Promise of Render Queue.");
+
+  return renderQueue.currentPromise.promise;
+}
 
 export function renderNode(node, force) {
   if (!node.instance) return;
