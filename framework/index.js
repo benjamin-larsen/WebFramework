@@ -1,5 +1,5 @@
 import { renderQueue } from './render/index.js';
-export { nextTick } from './render/index.js'
+export { nextTick } from './render/index.js';
 export {
   root,
   head,

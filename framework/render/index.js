@@ -22,20 +22,16 @@ class RenderQueue {
 
   flushPromise() {
     if (this.currentPromise) {
-      this.currentPromise.resolve()
+      this.currentPromise.resolve();
     }
 
     let resolve, reject;
     const promise = new Promise((res, rej) => {
       resolve = res;
       reject = rej;
-    })
+    });
 
-    this.currentPromise = {
-      promise,
-      resolve,
-      reject
-    }
+    this.currentPromise = { promise, resolve, reject };
   }
 
   process() {
@@ -94,7 +90,8 @@ class RenderQueue {
 export const renderQueue = new RenderQueue();
 
 export function nextTick() {
-  if (!renderQueue.currentPromise) throw Error("Unable to find Current Promise of Render Queue.");
+  if (!renderQueue.currentPromise)
+    throw Error('Unable to find Current Promise of Render Queue.');
 
   return renderQueue.currentPromise.promise;
 }
