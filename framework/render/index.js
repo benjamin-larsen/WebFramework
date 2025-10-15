@@ -17,13 +17,11 @@ class RenderQueue {
     this.waitingDir = new Set();
     this.renderId = null;
 
-    this.flushPromise();
+    this.setPromise();
   }
 
-  flushPromise() {
-    if (this.currentPromise) {
-      this.currentPromise.resolve();
-    }
+  setPromise() {
+    if (this.currentPromise) return;
 
     let resolve, reject;
     const promise = new Promise((res, rej) => {
@@ -42,6 +40,9 @@ class RenderQueue {
     this.waiting.clear();
     this.waitingDir.clear();
 
+    const promise = this.currentPromise;
+    this.currentPromise = null;
+
     for (const componentInstance of items) {
       if (!componentInstance.vnode) continue;
 
@@ -57,7 +58,9 @@ class RenderQueue {
       dir.runReact(false);
     }
 
-    this.flushPromise();
+    if (promise) {
+      promise.resolve();
+    }
 
     if (this.waiting.size > 0 || this.waitingDir.size > 0) {
       this.renderId = requestAnimationFrame(this.process.bind(this));
@@ -67,6 +70,8 @@ class RenderQueue {
   }
 
   queueDirective(dir) {
+    this.setPromise();
+
     dir.status = INSTANCE_STATES.UNSYNCED;
 
     this.waitingDir.add(dir);
@@ -77,6 +82,8 @@ class RenderQueue {
   }
 
   queue(component) {
+    this.setPromise();
+
     component.setStatus(INSTANCE_STATES.UNSYNCED);
 
     this.waiting.add(component);
@@ -89,9 +96,10 @@ class RenderQueue {
 
 export const renderQueue = new RenderQueue();
 
+const furfilledPromise = Promise.resolve();
+
 export function nextTick() {
-  if (!renderQueue.currentPromise)
-    throw Error('Unable to find Current Promise of Render Queue.');
+  if (!renderQueue.currentPromise) return furfilledPromise;
 
   return renderQueue.currentPromise.promise;
 }
