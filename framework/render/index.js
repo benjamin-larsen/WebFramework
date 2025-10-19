@@ -17,7 +17,7 @@ class RenderQueue {
     this.waitingDir = new Set();
     this.renderId = null;
 
-    this.setPromise();
+    this.currentPromise = null;
   }
 
   setPromise() {
