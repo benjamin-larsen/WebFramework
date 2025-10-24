@@ -17,6 +17,8 @@ const reservedProps = new Set(['methods', 'data', 'props', 'global']);
 
 const methodsProxyHandler = {
   get(instance, prop) {
+    if (prop === Symbol.toStringTag) return 'ComponentMethods';
+
     if (!instance.vnode) throw Error('Instance is destroyed.');
 
     const methods = instance.vnode.component.methods;
@@ -71,6 +73,8 @@ const methodsProxyHandler = {
 
 const instanceProxyHandler = {
   get(instance, prop) {
+    if (prop === Symbol.toStringTag) return 'ComponentContext';
+
     if (!instance.vnode) throw Error('Instance is destroyed.');
 
     switch (prop) {
@@ -238,6 +242,10 @@ export class ComponentInstance {
     if (import.meta.hot) {
       registerHMRComponent(this);
     }
+  }
+
+  get [Symbol.toStringTag]() {
+    return 'ComponentInstance';
   }
 
   setStatus(status) {
