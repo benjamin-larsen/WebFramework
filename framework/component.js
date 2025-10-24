@@ -6,6 +6,7 @@ import {
   getCurrentInstance,
   setCurrentInstance
 } from './effect.js';
+import { handleAsyncError } from './helpers.js';
 import { registerHMRComponent, removeHMRComponent } from './hmr.js';
 import { shallowReadonly } from './reactive.js';
 
@@ -109,6 +110,10 @@ const instanceProxyHandler = {
         return ComponentInstance.prototype.update.bind(instance);
       }
 
+      case '$emit': {
+        return ComponentInstance.prototype.emit.bind(instance);
+      }
+
       case '$raw': {
         return instance;
       }
@@ -188,6 +193,28 @@ export class ComponentInstance {
     if (status === INSTANCE_STATES.BEFORE_MOUNT) return;
 
     this.status = status;
+  }
+
+  emit(eventname, ...data) {
+    const propName = `on${eventname.slice(0, 1).toUpperCase()}${eventname.slice(1).toLowerCase()}`;
+    const func = this.vnode.properties[propName];
+
+    if (typeof func !== 'function') {
+      console.warn(`Event "${eventname}" was emitted without recipient.`);
+      return;
+    }
+
+    handleAsyncError(
+      func,
+      (e, async) => {
+        console.log(
+          `Error occured while running Emit Handler: ${eventname}`,
+          e,
+          { async }
+        );
+      },
+      ...data
+    );
   }
 
   callHook(hookName, ...args) {
