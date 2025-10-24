@@ -140,15 +140,14 @@ const instanceProxyHandler = {
       throw Error(`Can't set reserved property ${prop}.`);
     if (prop[0] === '$') throw Error(`Can't set internal functions ${prop}.`);
 
-    instance.data[prop] = value;
+    return Reflect.set(instance.data, prop, value);
 
-    return true;
   },
 
   ownKeys(instance) {
     if (!instance.vnode) throw Error('Instance is destroyed.');
 
-    return Object.keys(instance.data);
+    return Reflect.ownKeys(instance.data);
   },
 
   deleteProperty(instance, prop) {
