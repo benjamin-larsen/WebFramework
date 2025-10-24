@@ -263,6 +263,7 @@ export class ComponentInstance {
 
     handleAsyncError(
       func,
+      this.expose,
       (e, async) => {
         console.log(
           `Error occured while running Emit Handler: ${eventname}`,

@@ -31,9 +31,9 @@ export function shallowCompareObj(objA, objB) {
   return true;
 }
 
-export function handleAsyncError(func, onError, ...args) {
+export function handleAsyncError(func, self, onError, ...args) {
   try {
-    const res = func(...args);
+    const res = func.apply(self, args);
 
     if (
       res &&
