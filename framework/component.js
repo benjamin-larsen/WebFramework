@@ -145,7 +145,12 @@ const instanceProxyHandler = {
     if (prop[0] === '$') throw Error(`Can't set internal functions ${prop}.`);
 
     return Reflect.set(instance.data, prop, value);
+  },
 
+  has(instance, prop) {
+    if (!instance.vnode) throw Error('Instance is destroyed.');
+
+    return Reflect.has(instance.data, prop);
   },
 
   ownKeys(instance) {
