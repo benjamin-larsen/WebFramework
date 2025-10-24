@@ -66,6 +66,23 @@ const methodsProxyHandler = {
     return Object.keys(methods);
   },
 
+  getOwnPropertyDescriptor(instance, prop) {
+    if (!instance.vnode) throw Error('Instance is destroyed.');
+
+    const methods = instance.vnode.component.methods;
+    if (
+      methods === null ||
+      typeof methods !== 'object' ||
+      methods.constructor !== Object
+    )
+      return undefined;
+
+    return Reflect.getOwnPropertyDescriptor(
+      instance.vnode.component.methods,
+      prop
+    );
+  },
+
   deleteProperty() {
     throw Error("Can't delete Component Methods.");
   }
@@ -159,6 +176,12 @@ const instanceProxyHandler = {
     return Reflect.ownKeys(instance.data);
   },
 
+  getOwnPropertyDescriptor(instance, prop) {
+    if (!instance.vnode) throw Error('Instance is destroyed.');
+
+    return Reflect.getOwnPropertyDescriptor(instance.data, prop);
+  },
+
   deleteProperty(instance, prop) {
     if (!instance.vnode) throw Error('Instance is destroyed.');
     if (reservedProps.has(prop))
@@ -216,6 +239,16 @@ const exposeProxyHandler = {
     const dataKeys = Reflect.ownKeys(instance.data);
 
     return dataKeys.filter((k) => expose.includes(k));
+  },
+
+  getOwnPropertyDescriptor(instance, prop) {
+    if (!instance.vnode) throw Error('Instance is destroyed.');
+
+    const expose = instance.vnode.component.expose;
+
+    if (!Array.isArray(expose) || !expose.includes(prop)) return undefined;
+
+    return Reflect.getOwnPropertyDescriptor(instance.data, prop);
   },
 
   deleteProperty(instance, prop) {
