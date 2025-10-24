@@ -164,6 +164,62 @@ const instanceProxyHandler = {
   }
 };
 
+const exposeProxyHandler = {
+  get(instance, prop) {
+    if (prop === Symbol.toStringTag) return 'ComponentExpose';
+
+    if (!instance.vnode) throw Error('Instance is destroyed.');
+
+    const expose = instance.vnode.component.expose;
+
+    if (!Array.isArray(expose) || !expose.includes(prop)) return undefined;
+
+    return Reflect.get(instance.data, prop);
+  },
+
+  set(instance, prop, value) {
+    if (!instance.vnode) throw Error('Instance is destroyed.');
+
+    const expose = instance.vnode.component.expose;
+
+    if (!Array.isArray(expose) || !expose.includes(prop))
+      throw Error(`Can't set non-exposed prop ${prop}.`);
+
+    return Reflect.set(instance.data, prop, value);
+  },
+
+  has(instance, prop) {
+    if (!instance.vnode) throw Error('Instance is destroyed.');
+
+    const expose = instance.vnode.component.expose;
+
+    if (!Array.isArray(expose) || !expose.includes(prop)) return false;
+
+    return Reflect.has(instance.data, prop);
+  },
+
+  ownKeys(instance) {
+    if (!instance.vnode) throw Error('Instance is destroyed.');
+
+    const expose = instance.vnode.component.expose;
+
+    if (!Array.isArray(expose)) return [];
+
+    const dataKeys = Reflect.ownKeys(instance.data);
+
+    return dataKeys.filter((k) => expose.includes(k));
+  },
+
+  deleteProperty(instance, prop) {
+    if (!instance.vnode) throw Error('Instance is destroyed.');
+
+    const expose = instance.vnode.component.expose;
+
+    if (!Array.isArray(expose) || !expose.includes(prop))
+      throw Error(`Can't delete non-exposed prop ${prop}.`);
+  }
+};
+
 export class ComponentInstance {
   constructor(vnode, level, parent) {
     this.vnode = vnode;
@@ -173,6 +229,7 @@ export class ComponentInstance {
     this.parent = parent;
     this.publicMethods = new Proxy(this, methodsProxyHandler);
     this.public = new Proxy(this, instanceProxyHandler);
+    this.expose = new Proxy(this, exposeProxyHandler);
     this.data = {};
 
     this.subscriber = new DependencySubscriber(this.update.bind(this));
