@@ -258,6 +258,8 @@ const exposeProxyHandler = {
 
     if (!Array.isArray(expose) || !expose.includes(prop))
       throw Error(`Can't delete non-exposed prop ${prop}.`);
+
+    return Reflect.deleteProperty(instance.data, prop);
   }
 };
 
