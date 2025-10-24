@@ -142,9 +142,9 @@ function patchEvent(prevNode, nextNode, propName, listenerFn) {
     invokerMap[eventName] = invoker;
 
     invoker.func = listenerFn;
-    invoker.node = nextNode;
+    invoker.node = nextNode.el;
   } else {
-    const invoker = createInvoker(listenerFn, nextNode);
+    const invoker = createInvoker(listenerFn, nextNode.el);
     invokerMap[eventName] = invoker;
 
     nextNode.el.addEventListener(eventName, invoker);
