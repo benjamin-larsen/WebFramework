@@ -1,6 +1,6 @@
 import { renderNode } from './index.js';
 import { findAnchor, refreshComponentAnchor } from '../anchor.js';
-import { patchProps } from './patchProps.js';
+import { patchProps, patchCompRef } from './patchProps.js';
 import {
   ComponentNode,
   ElementNode,
@@ -141,6 +141,8 @@ function patchComponent(parentNode, nextNode, prevNode, index) {
     nextNode.index = index;
     nextNode.parent = parentNode;
 
+    patchCompRef(prevNode, nextNode);
+
     return nextNode;
   } else {
     // Set children as it's used for patching in rendering
@@ -160,6 +162,7 @@ function patchComponent(parentNode, nextNode, prevNode, index) {
     }
 
     renderNode(nextNode, true);
+    patchCompRef(prevNode, nextNode);
 
     return nextNode;
   }

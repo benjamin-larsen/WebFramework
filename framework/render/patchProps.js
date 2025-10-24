@@ -190,6 +190,20 @@ export function patchProp(prevNode, nextNode, prop, value, namespace) {
   }
 }
 
+export function patchCompRef(prevNode, nextNode) {
+  const nextRef = nextNode.properties.ref;
+
+  if (prevNode && isRef(prevNode.properties.ref)) {
+    if (prevNode.properties.ref !== nextRef) return;
+
+    prevNode.properties.ref.value = null;
+  }
+
+  if (isRef(nextRef)) {
+    nextRef.value = nextNode.instance.expose;
+  }
+}
+
 export function patchProps(prevNode, nextNode, namespace) {
   if (prevNode && prevNode.properties === nextNode.properties) return;
 
