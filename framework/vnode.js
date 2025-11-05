@@ -102,7 +102,7 @@ export class ElementNode {
     if (this.el && !DOMHandled) {
       this.el.remove();
     }
-  
+
     this.el = null;
     this.children = null;
   }
