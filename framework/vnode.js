@@ -51,12 +51,12 @@ export class FragmentNode {
     this.el = null;
   }
 
-  unmount() {
+  unmount(DOMHandled = false) {
     this.anchor = null;
 
     for (const child of this.children) {
       if (!child) continue;
-      child.unmount();
+      child.unmount(DOMHandled);
     }
 
     // Prevent Memory Leak
@@ -83,12 +83,10 @@ export class ElementNode {
     this.el = null;
   }
 
-  unmount() {
-    if (!this.el) return;
-
+  unmount(DOMHandled = false) {
     for (const child of this.children) {
       if (!child) continue;
-      child.unmount();
+      child.unmount(true);
     }
 
     if (isRef(this.properties.ref)) {
@@ -101,7 +99,10 @@ export class ElementNode {
       }
     }
 
-    this.el.remove();
+    if (this.el && !DOMHandled) {
+      this.el.remove();
+    }
+  
     this.el = null;
     this.children = null;
   }
@@ -125,10 +126,13 @@ export class TextNode {
     this.el = null;
   }
 
-  unmount() {
+  unmount(DOMHandled = false) {
     if (!this.el) return;
 
-    this.el.remove();
+    if (!DOMHandled) {
+      this.el.remove();
+    }
+
     this.el = null;
   }
 
@@ -183,12 +187,12 @@ export class ComponentNode {
     this.instance = null;
   }
 
-  unmount() {
+  unmount(DOMHandled = false) {
     this.anchor = null;
 
     for (const child of this.children) {
       if (!child) continue;
-      child.unmount();
+      child.unmount(DOMHandled);
     }
 
     // Prevent Memory Leak
