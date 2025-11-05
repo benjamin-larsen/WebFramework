@@ -1,6 +1,7 @@
+import { isRef } from './reactive.js';
+
 const targetMap = new Map();
 let activeEffect = null;
-let bypassCounter = 0;
 
 let currentRoot = null; // Current Root is the Render Queue being triggered, no need to make stack as they should be done one-by-one.
 let currentInstance = null;
@@ -89,11 +90,6 @@ export class DependencySubscriber {
   }
 }
 
-function isTrackingDisabled() {
-  if (bypassCounter > 0) return true;
-  return false;
-}
-
 function subscribe(target, subscriber) {
   let dep = targetMap.get(target);
 
@@ -106,7 +102,6 @@ function subscribe(target, subscriber) {
 }
 
 export function track(target) {
-  if (isTrackingDisabled()) return;
   if (!activeEffect) return;
 
   subscribe(target, activeEffect);
@@ -121,22 +116,7 @@ export function trigger(target) {
   }
 }
 
-export function withoutTracking(func) {
-  bypassCounter++;
-
-  try {
-    return func();
-  } finally {
-    bypassCounter--;
-  }
-}
-
 export function withTracking(subscription, func) {
-  if (isTrackingDisabled())
-    throw Error(
-      'Fatal Error: Tracking disabled when trying to track new function.'
-    );
-
   subscription.preTracking();
 
   const prevEffect = activeEffect;
@@ -148,4 +128,76 @@ export function withTracking(subscription, func) {
     activeEffect = prevEffect;
     subscription.postTracking();
   }
+}
+
+export function withoutTracking(func) {
+  const prevEffect = activeEffect;
+  activeEffect = null;
+
+  try {
+    return func();
+  } finally {
+    activeEffect = prevEffect;
+  }
+}
+
+export function watch(dep, callback, options = {}) {
+  if (!currentInstance)
+    throw Error('Attempted to call watch() outside Instance');
+
+  const instance = currentInstance;
+
+  const { immediate = false } = options;
+
+  let getter = () => undefined;
+
+  if (!callback && typeof dep !== 'function')
+    throw Error('Watch Effect must be provided a Function.');
+
+  if (isRef(dep)) {
+    getter = () => dep.value;
+  } else if (typeof dep === 'function') {
+    getter = dep;
+  }
+
+  let oldValue = undefined;
+
+  function onReact() {
+    if (callback) {
+      const newValue = getter();
+
+      if (newValue === oldValue) return;
+
+      withoutTracking(callback.bind(null, newValue, oldValue));
+
+      oldValue = newValue;
+    } else {
+      getter();
+    }
+  }
+
+  const sub = new DependencySubscriber(onReact);
+  getter = withTracking.bind(null, sub, getter);
+
+  if (immediate || !callback) {
+    onReact();
+  } else {
+    oldValue = getter();
+  }
+
+  instance.watchers.push(sub);
+
+  return () => {
+    sub.destroy();
+
+    const index = instance.watchers.indexOf(sub);
+
+    if (index !== -1) {
+      instance.watchers.splice(index, 1);
+    }
+  };
+}
+
+export function watchEffect(callback, options = {}) {
+  return watch(callback, null, options);
 }

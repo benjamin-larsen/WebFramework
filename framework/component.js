@@ -274,6 +274,7 @@ export class ComponentInstance {
     this.public = new Proxy(this, instanceProxyHandler);
     this.expose = new Proxy(this, exposeProxyHandler);
     this.data = {};
+    this.watchers = [];
 
     this.subscriber = new DependencySubscriber(this.update.bind(this));
 
@@ -408,6 +409,10 @@ export class ComponentInstance {
   destroy() {
     if (import.meta.hot) {
       removeHMRComponent(this);
+    }
+
+    for (const watcher of this.watchers) {
+      watcher.destroy();
     }
 
     this.subscriber.destroy();
