@@ -31,13 +31,13 @@ const reactiveHandler = {
   set(target, prop, value) {
     const shouldTrigger = Object.is(target[prop], value);
 
-    Reflect.set(target, prop, value);
+    const success = Reflect.set(target, prop, value);
 
-    if (shouldTrigger) {
+    if (success && shouldTrigger) {
       trigger(target);
     }
 
-    return true;
+    return success;
   },
 
   has(target, prop) {
@@ -55,12 +55,15 @@ const reactiveHandler = {
   },
 
   deleteProperty(target, prop) {
-    if (prop in target) {
-      Reflect.deleteProperty(target, prop);
+    const shouldTrigger = prop in target;
+
+    const success = Reflect.deleteProperty(target, prop);
+
+    if (success && shouldTrigger) {
       trigger(target);
     }
 
-    return true;
+    return success;
   }
 };
 
@@ -114,7 +117,8 @@ const readonlyHandler = {
       'on readonly object',
       target
     );
-    return true;
+
+    return false;
   },
 
   has(target, prop) {
@@ -134,7 +138,8 @@ const readonlyHandler = {
       'on readonly object',
       target
     );
-    return true;
+
+    return false;
   }
 };
 

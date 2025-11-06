@@ -189,9 +189,7 @@ const instanceProxyHandler = {
     if (prop[0] === '$')
       throw Error(`Can't delete internal functions ${prop}.`);
 
-    delete instance.data[prop];
-
-    return true;
+    return Reflect.deleteProperty(instance.data, prop);
   }
 };
 
