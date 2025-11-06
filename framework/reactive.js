@@ -5,6 +5,7 @@ const reactiveMap = new WeakMap();
 const shallowReactiveMap = new WeakMap();
 const readonlyMap = new WeakMap();
 const shallowReadonlyMap = new WeakMap();
+const markedRawMap = new WeakSet();
 
 const reactiveHandler = {
   get(target, prop) {
@@ -164,6 +165,7 @@ const shallowReadonlyHandler = {
 
 function canReact(target) {
   if (target === null || typeof target !== 'object') return false;
+  if (markedRawMap.has(target)) return false;
 
   const type = Object.prototype.toString.call(target).slice(8, -1);
 
@@ -306,4 +308,12 @@ export function shallowRef(initValue) {
     return initValue;
   }
   return new ReactiveRef(initValue, true);
+}
+
+export function markRaw(obj) {
+  if (!canReact(obj)) return obj;
+
+  markedRawMap.add(obj);
+
+  return obj;
 }

@@ -19,7 +19,8 @@ export {
   shallowReadonly,
   ref,
   shallowRef,
-  isRef
+  isRef,
+  markRaw
 } from './reactive.js';
 export { withoutTracking, watch, watchEffect } from './effect.js';
 export { default as Debugger } from './debug/index.js';
