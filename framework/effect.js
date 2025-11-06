@@ -166,7 +166,7 @@ export function watch(dep, callback, options = {}) {
     if (callback) {
       const newValue = getter();
 
-      if (newValue === oldValue) return;
+      if (Object.is(newValue, oldValue)) return;
 
       withoutTracking(callback.bind(null, newValue, oldValue));
 

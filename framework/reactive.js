@@ -29,7 +29,7 @@ const reactiveHandler = {
   },
 
   set(target, prop, value) {
-    const shouldTrigger = target[prop] !== value;
+    const shouldTrigger = Object.is(target[prop], value);
 
     Reflect.set(target, prop, value);
 
@@ -264,7 +264,7 @@ class ReactiveRef {
   }
 
   set value(newValue) {
-    const shouldTrigger = this[REACTIVE_FLAGS.REF_VALUE] !== newValue;
+    const shouldTrigger = Object.is(this[REACTIVE_FLAGS.REF_VALUE], newValue);
 
     this[REACTIVE_FLAGS.REF_VALUE] = newValue;
 
