@@ -1,5 +1,5 @@
 import { DIRECTIVE_STATES, INSTANCE_STATES, EMPTY_ARR } from '../constants.js';
-import { DependencySubscriber, withTracking } from '../effect.js';
+import { DependencySubscriber, withTracking } from '../reactivity/effect.js';
 import { renderQueue } from './index.js';
 
 function queueReact(dir) {

@@ -10,8 +10,8 @@ import {
 import { ComponentInstance } from '../component.js';
 import { shallowCompareObj } from '../helpers.js';
 import { INSTANCE_STATES, NAMESPACES, NAMESPACES_TAGS } from '../constants.js';
-import { shallowReadonly } from '../reactive.js';
-import { getCurrentInstance } from '../effect.js';
+import { shallowReadonly } from '../reactivity/reactive.js';
+import { getCurrentInstance } from '../reactivity/effect.js';
 import {
   patchElementDirectives,
   finishElementDirectives

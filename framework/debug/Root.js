@@ -1,4 +1,4 @@
-import { reactive } from '../reactive.js';
+import { reactive } from '../reactivity/reactive.js';
 import { createComponent, createElement } from '../vnode.js';
 
 const ObjectPreview = {

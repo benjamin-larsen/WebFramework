@@ -1,7 +1,7 @@
 import { ComponentInstance, isComponent } from './component.js';
 import { REACTIVE_FLAGS, EMPTY_PROPS } from './constants.js';
 import standardComponents from './standardComponents/index.js';
-import { isRef } from './reactive.js';
+import { isRef } from './reactivity/reactive.js';
 import { destroyDirective } from './render/directives.js';
 
 export class RootContainer {

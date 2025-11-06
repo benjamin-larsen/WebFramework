@@ -1,5 +1,5 @@
 import { track, trigger } from './effect.js';
-import { REACTIVE_FLAGS } from './constants.js';
+import { REACTIVE_FLAGS } from '../constants.js';
 
 const reactiveMap = new WeakMap();
 const shallowReactiveMap = new WeakMap();

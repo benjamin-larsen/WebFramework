@@ -5,10 +5,10 @@ import {
   withoutTracking,
   getCurrentInstance,
   setCurrentInstance
-} from './effect.js';
+} from './reactivity/effect.js';
 import { handleAsyncError } from './helpers.js';
 import { registerHMRComponent, removeHMRComponent } from './hmr.js';
-import { shallowReadonly } from './reactive.js';
+import { shallowReadonly } from './reactivity/reactive.js';
 
 const globalSharedProps = new Map();
 export const globalProperties = {};

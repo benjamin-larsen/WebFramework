@@ -2,8 +2,12 @@ import { ComponentNode } from '../vnode.js';
 import { refreshComponentAnchor } from '../anchor.js';
 import { patch } from './patching.js';
 import { INSTANCE_STATES, EMPTY_PROPS } from '../constants.js';
-import { withTracking, setCurrentRoot, setCurrentInstance } from '../effect.js';
-import { shallowReadonly } from '../reactive.js';
+import {
+  withTracking,
+  setCurrentRoot,
+  setCurrentInstance
+} from '../reactivity/effect.js';
+import { shallowReadonly } from '../reactivity/reactive.js';
 
 let shouldTrackTime = false;
 

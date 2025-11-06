@@ -1,5 +1,5 @@
 import { enableRenderTiming } from './render/index.js';
-import { getCurrentInstance } from './effect.js';
+import { getCurrentInstance } from './reactivity/effect.js';
 
 export const plugins = new Set();
 

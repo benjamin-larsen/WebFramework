@@ -1,5 +1,5 @@
 import { INSTANCE_STATES } from './constants.js';
-import { shallowReadonly } from './reactive.js';
+import { shallowReadonly } from './reactivity/reactive.js';
 
 const instanceMap = new Map();
 const componentMap = new Map();

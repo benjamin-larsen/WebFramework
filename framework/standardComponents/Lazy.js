@@ -1,4 +1,4 @@
-import { ref } from '../reactive.js';
+import { ref } from '../reactivity/reactive.js';
 import { c } from '../vnode.js';
 
 export default {

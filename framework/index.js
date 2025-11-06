@@ -21,8 +21,8 @@ export {
   shallowRef,
   isRef,
   markRaw
-} from './reactive.js';
-export { withoutTracking, watch, watchEffect } from './effect.js';
+} from './reactivity/reactive.js';
+export { withoutTracking, watch, watchEffect } from './reactivity/effect.js';
 export { default as Debugger } from './debug/index.js';
 export { usePlugin } from './plugins.js';
 export { default as nModel } from './standardDirectives/nModel.js';
