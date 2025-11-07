@@ -1,12 +1,8 @@
 import { ComponentNode } from '../vnode.js';
 import { refreshComponentAnchor } from '../anchor.js';
 import { patch } from './patching.js';
-import { INSTANCE_STATES, EMPTY_PROPS } from '../constants.js';
-import {
-  withTracking,
-  setCurrentRoot,
-  setCurrentInstance
-} from '../reactivity/effect.js';
+import { INSTANCE_STATES } from '../constants.js';
+import { setCurrentRoot, setCurrentInstance } from '../reactivity/effect.js';
 import { shallowReadonly } from '../reactivity/reactive.js';
 
 let shouldTrackTime = false;
@@ -57,9 +53,9 @@ class RenderQueue {
     setCurrentRoot(null);
 
     for (const dir of dirs) {
-      if (!dir.sub) continue;
+      if (!dir.effect) continue;
 
-      dir.runReact(false);
+      dir.effect.run();
     }
 
     if (promise) {
@@ -120,15 +116,7 @@ export function renderNode(node, force) {
       refreshComponentAnchor(node);
     }
 
-    const nextChildren = withTracking(
-      node.instance.subscriber,
-      node.component.render.bind(
-        node.instance.public,
-        node.instance.public,
-        shallowReadonly(node.properties),
-        node.slots || EMPTY_PROPS
-      )
-    );
+    const nextChildren = node.instance.effect.run();
 
     if (!Array.isArray(nextChildren)) {
       throw Error('Render function must return a Fragment.');

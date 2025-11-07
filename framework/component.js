@@ -1,7 +1,7 @@
 import { renderQueue } from './render/index.js';
-import { INSTANCE_STATES } from './constants.js';
+import { EMPTY_PROPS, INSTANCE_STATES } from './constants.js';
 import {
-  DependencySubscriber,
+  Effect,
   withoutTracking,
   getCurrentInstance,
   setCurrentInstance
@@ -274,7 +274,21 @@ export class ComponentInstance {
     this.data = {};
     this.watchers = [];
 
-    this.subscriber = new DependencySubscriber(this.update.bind(this));
+    this.effect = new Effect(() => {
+      const componentNode = this.vnode;
+      if (!componentNode) return undefined;
+
+      const componentDef = componentNode.component;
+
+      return componentDef.render.call(
+        this.public,
+        this.public,
+        shallowReadonly(componentNode.properties),
+        componentNode.slots || EMPTY_PROPS
+      );
+    });
+
+    this.effect.scheduler = this.update.bind(this);
 
     this.callHook('onCreated', shallowReadonly(this.vnode.properties));
 
@@ -413,7 +427,8 @@ export class ComponentInstance {
       watcher.destroy();
     }
 
-    this.subscriber.destroy();
+    this.effect.destroy();
+    this.effect = null;
     this.vnode = null;
   }
 }

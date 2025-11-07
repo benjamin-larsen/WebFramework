@@ -1,5 +1,5 @@
 import { DIRECTIVE_STATES, INSTANCE_STATES, EMPTY_ARR } from '../constants.js';
-import { DependencySubscriber, withTracking } from '../reactivity/effect.js';
+import { Effect } from '../reactivity/effect.js';
 import { renderQueue } from './index.js';
 
 function queueReact(dir) {
@@ -12,23 +12,17 @@ class ReactiveDirective {
     this.dir = dir;
     this.binding = binding;
     this.status = INSTANCE_STATES.UNSYNCED;
-    this.sub = new DependencySubscriber(queueReact.bind(null, this));
+
+    this.effect = new Effect(ReactiveDirective.prototype.runReact.bind(this));
+
+    this.effect.scheduler = queueReact.bind(null, this);
   }
 
   runReact(force = false) {
     if (!force && this.status !== INSTANCE_STATES.UNSYNCED) return;
 
     try {
-      withTracking(
-        this.sub,
-        this.dir.onReact.bind(
-          null,
-          this.node.el, // el
-          this.binding, // binding
-          this.node, // VNode
-          null // prevVNode
-        )
-      );
+      this.dir.onReact(this.node.el, this.binding, this.node, null);
 
       this.status = INSTANCE_STATES.SYNCED;
     } catch (e) {
@@ -37,8 +31,8 @@ class ReactiveDirective {
   }
 
   destroy() {
-    this.sub.destroy();
-    this.sub = null;
+    this.effect.destroy();
+    this.effect = null;
     this.node = null;
     this.dir = null;
     this.binding = null;
@@ -155,7 +149,7 @@ export function finishElementDirectives(prevNode, nextNode) {
 
       case DIRECTIVE_STATES.SYNCED: {
         if (binding.react) {
-          binding.react.runReact(true);
+          binding.react.effect.run(true);
         }
 
         callDirectiveHook(
@@ -171,7 +165,7 @@ export function finishElementDirectives(prevNode, nextNode) {
 
       case DIRECTIVE_STATES.SYNCED_MOUNT: {
         if (binding.react) {
-          binding.react.runReact(true);
+          binding.react.effect.run(true);
         }
 
         callDirectiveHook(dir, 'onMounted', nextNode.el, binding, nextNode);

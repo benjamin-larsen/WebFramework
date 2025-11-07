@@ -1,4 +1,5 @@
 import { isRef } from './reactive.js';
+import { EFFECT_STATES } from '../constants.js';
 
 const targetMap = new Map();
 let activeEffect = null;
@@ -38,6 +39,12 @@ class Dependency {
     this.target = target;
   }
 
+  trigger() {
+    for (const sub of this.subs.keys()) {
+      sub.trigger();
+    }
+  }
+
   subscribe(subscriber) {
     let subscription = this.subs.get(subscriber);
 
@@ -59,13 +66,85 @@ class Dependency {
   }
 }
 
-export class DependencySubscriber {
-  constructor(onReact) {
-    this.onReact = onReact;
+// Incase a destroyed Effect would be used, don't cause a failure.
+const mockMap = {
+  set() {
+    return undefined;
+  }
+};
+
+export class Effect {
+  constructor(func) {
+    this.func = func;
     this.deps = new Map();
+    this.state = EFFECT_STATES.ENABLED;
+  }
+
+  isEnabled() {
+    return (this.state & EFFECT_STATES.ENABLED) !== 0;
+  }
+
+  pause() {
+    this.state |= EFFECT_STATES.PAUSED;
+  }
+
+  isPaused() {
+    return (this.state & EFFECT_STATES.PAUSED) !== 0;
+  }
+
+  isAwaitingEffect() {
+    return (this.state & EFFECT_STATES.AWAITING_EFFECT) !== 0;
+  }
+
+  resume() {
+    if (this.isPaused()) {
+      const awaitingRun = this.isAwaitingEffect();
+
+      this.state &= ~(EFFECT_STATES.PAUSED | EFFECT_STATES.AWAITING_EFFECT);
+
+      if (awaitingRun) {
+        this.trigger();
+      }
+    }
+  }
+
+  trigger() {
+    if (!this.isEnabled()) {
+      console.warn('Attempted to trigger a destroyed Effect.');
+      return;
+    }
+
+    if (this.isPaused()) {
+      this.state |= EFFECT_STATES.AWAITING_EFFECT;
+    } else if (typeof this.scheduler === 'function') {
+      this.scheduler();
+    } else {
+      this.run();
+    }
+  }
+
+  run(...args) {
+    if (!this.isEnabled()) {
+      console.warn('Attempted to run a destroyed Effect.');
+      return undefined;
+    }
+
+    this.preTracking();
+
+    const prevEffect = activeEffect;
+    activeEffect = this;
+
+    try {
+      return this.func(...args);
+    } finally {
+      activeEffect = prevEffect;
+      this.postTracking();
+    }
   }
 
   preTracking() {
+    this.state |= EFFECT_STATES.RUNNING;
+
     for (const [_, subscription] of this.deps) {
       subscription.isNew = false;
     }
@@ -78,15 +157,22 @@ export class DependencySubscriber {
         this.deps.delete(dep);
       }
     }
+
+    this.state &= ~EFFECT_STATES.RUNNING;
   }
 
   destroy() {
-    for (const [dep] of this.deps) {
+    for (const dep of this.deps.keys()) {
       dep.unsubscribe(this);
     }
 
-    this.deps = null;
-    this.onReact = null;
+    if (activeEffect === this) {
+      activeEffect = null;
+    }
+
+    this.func = null;
+    this.deps = mockMap;
+    this.state = 0;
   }
 }
 
@@ -111,23 +197,7 @@ export function trigger(target) {
   const dep = targetMap.get(target);
   if (!dep) return;
 
-  for (const [sub] of dep.subs) {
-    sub.onReact();
-  }
-}
-
-export function withTracking(subscription, func) {
-  subscription.preTracking();
-
-  const prevEffect = activeEffect;
-  activeEffect = subscription;
-
-  try {
-    return func();
-  } finally {
-    activeEffect = prevEffect;
-    subscription.postTracking();
-  }
+  dep.trigger();
 }
 
 export function withoutTracking(func) {
@@ -162,9 +232,11 @@ export function watch(dep, callback, options = {}) {
 
   let oldValue = undefined;
 
-  function onReact() {
+  const sub = new Effect(getter);
+
+  function job() {
     if (callback) {
-      const newValue = getter();
+      const newValue = sub.run();
 
       if (Object.is(newValue, oldValue)) return;
 
@@ -176,13 +248,12 @@ export function watch(dep, callback, options = {}) {
     }
   }
 
-  const sub = new DependencySubscriber(onReact);
-  getter = withTracking.bind(null, sub, getter);
+  sub.scheduler = job;
 
   if (immediate || !callback) {
-    onReact();
+    job();
   } else {
-    oldValue = getter();
+    oldValue = sub.run();
   }
 
   instance.watchers.push(sub);

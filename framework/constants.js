@@ -33,3 +33,10 @@ export const NAMESPACES = {
 };
 
 export const NAMESPACES_TAGS = { svg: NAMESPACES.svg, math: NAMESPACES.math };
+
+export const EFFECT_STATES = {
+  ENABLED: 1 << 0,
+  PAUSED: 1 << 1,
+  RUNNING: 1 << 2,
+  AWAITING_EFFECT: 1 << 3
+};
