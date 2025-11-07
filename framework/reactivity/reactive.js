@@ -244,9 +244,12 @@ export function shallowReadonly(target) {
 class ReactiveRef {
   constructor(initValue, isShallow) {
     this[REACTIVE_FLAGS.REF_VALUE] = initValue;
-    this[REACTIVE_FLAGS.IS_REF] = true;
     this.isShallow = isShallow;
     this.dep = new Dependency(null, null);
+  }
+
+  get [REACTIVE_FLAGS.IS_REF]() {
+    return true;
   }
 
   get [Symbol.toStringTag]() {
