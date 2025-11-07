@@ -1,5 +1,5 @@
 import { RESERVED_PROPS, NAMESPACES } from '../constants.js';
-import { isRef } from '../reactivity/reactive.js';
+import { isRef } from '../reactivity/ref.js';
 
 function patchClassName(prevNode, nextNode, classList) {
   let computedClass = classList || '';

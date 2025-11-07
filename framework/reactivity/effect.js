@@ -1,4 +1,4 @@
-import { isRef } from './reactive.js';
+import { isRef } from './ref.js';
 import { EFFECT_STATES } from '../constants.js';
 import { handleAsyncError } from '../helpers.js';
 

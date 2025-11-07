@@ -1,4 +1,4 @@
-import { isRef } from '../reactivity/reactive.js';
+import { isRef } from '../reactivity/ref.js';
 
 const inputListener = Symbol('inputListener');
 

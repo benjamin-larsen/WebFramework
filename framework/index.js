@@ -17,12 +17,14 @@ export {
   shallowReactive,
   readonly,
   shallowReadonly,
-  ref,
-  shallowRef,
-  isRef,
   markRaw,
   toRaw
 } from './reactivity/reactive.js';
+export {
+  ref,
+  shallowRef,
+  isRef
+} from './reactivity/ref.js'
 export {
   withoutTracking,
   watch,
