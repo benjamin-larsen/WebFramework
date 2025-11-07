@@ -152,7 +152,7 @@ export class Effect {
   preTracking() {
     this.state |= EFFECT_STATES.RUNNING;
 
-    for (const [_, subscription] of this.deps) {
+    for (const subscription of this.deps.values()) {
       subscription.isNew = false;
     }
   }
