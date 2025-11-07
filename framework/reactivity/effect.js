@@ -1,5 +1,6 @@
 import { isRef } from './reactive.js';
 import { EFFECT_STATES } from '../constants.js';
+import { handleAsyncError } from '../helpers.js';
 
 const targetMap = new Map();
 let activeEffect = null;
@@ -211,6 +212,14 @@ export function withoutTracking(func) {
   }
 }
 
+const microtaskPromise = Promise.resolve();
+
+function queueJob(job) {
+  if (typeof window.queueMicrotask === 'function') return window.queueMicrotask(job);
+
+  microtaskPromise.then(job);
+}
+
 export function watch(dep, callback, options = {}) {
   if (!currentInstance)
     throw Error('Attempted to call watch() outside Instance');
@@ -232,36 +241,56 @@ export function watch(dep, callback, options = {}) {
 
   let oldValue = undefined;
 
-  const sub = new Effect(getter);
+  const effect = new Effect(getter);
 
   function job() {
     if (callback) {
-      const newValue = sub.run();
+      const newValue = effect.run();
 
       if (Object.is(newValue, oldValue)) return;
 
-      withoutTracking(callback.bind(null, newValue, oldValue));
+      handleAsyncError(
+        () => {
+          const prevEffect = activeEffect;
+          activeEffect = null;
+          try {
+            return callback(newValue, oldValue);
+          } finally {
+            activeEffect = prevEffect;
+          }
+        },
+        null,
+        (e, async) => {
+          console.log(
+            `Error occured while running Watcher.`,
+            e,
+            { async }
+          );
+        }
+      )
 
       oldValue = newValue;
     } else {
-      getter();
+      effect.run();
     }
   }
 
-  sub.scheduler = job;
+  effect.scheduler = () => {
+    queueJob(job)
+  };
 
   if (immediate || !callback) {
     job();
   } else {
-    oldValue = sub.run();
+    oldValue = effect.run();
   }
 
-  instance.watchers.push(sub);
+  instance.watchers.push(effect);
 
   return () => {
-    sub.destroy();
+    effect.destroy();
 
-    const index = instance.watchers.indexOf(sub);
+    const index = instance.watchers.indexOf(effect);
 
     if (index !== -1) {
       instance.watchers.splice(index, 1);
