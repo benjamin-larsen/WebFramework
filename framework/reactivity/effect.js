@@ -34,9 +34,8 @@ class Subscription {
   }
 }
 
-class Dependency {
-  constructor(target) {
 export class Dependency {
+  constructor(target) {
     this.subs = new Map();
     this.target = target;
   }
