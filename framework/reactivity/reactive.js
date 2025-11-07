@@ -1,5 +1,6 @@
 import { track, trigger } from './effect.js';
 import { REACTIVE_FLAGS } from '../constants.js';
+import { Dependency, track, trigger } from './effect.js';
 
 const reactiveMap = new WeakMap();
 const shallowReactiveMap = new WeakMap();
@@ -246,6 +247,7 @@ class ReactiveRef {
     this[REACTIVE_FLAGS.REF_VALUE] = initValue;
     this[REACTIVE_FLAGS.IS_REF] = true;
     this.isShallow = isShallow;
+    this.dep = new Dependency(null, null);
   }
 
   get [Symbol.toStringTag]() {
@@ -253,7 +255,7 @@ class ReactiveRef {
   }
 
   get value() {
-    track(this);
+    this.dep.track();
 
     const value = this[REACTIVE_FLAGS.REF_VALUE];
 
@@ -276,7 +278,7 @@ class ReactiveRef {
     this[REACTIVE_FLAGS.REF_VALUE] = newValue;
 
     if (shouldTrigger) {
-      trigger(this);
+      this.dep.trigger();
     }
   }
 }

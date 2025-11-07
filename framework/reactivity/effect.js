@@ -36,8 +36,15 @@ class Subscription {
 
 class Dependency {
   constructor(target) {
+export class Dependency {
     this.subs = new Map();
     this.target = target;
+  }
+
+  track() {
+    if (!activeEffect) return;
+
+    this.subscribe(activeEffect);
   }
 
   trigger() {
