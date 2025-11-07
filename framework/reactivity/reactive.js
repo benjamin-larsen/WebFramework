@@ -1,4 +1,3 @@
-import { track, trigger } from './effect.js';
 import { REACTIVE_FLAGS } from '../constants.js';
 import { Dependency, track, trigger } from './effect.js';
 
@@ -318,4 +317,9 @@ export function markRaw(obj) {
   markedRawMap.add(obj);
 
   return obj;
+}
+export function toRaw(obj) {
+  if (obj === null || typeof obj !== 'object') return obj;
+
+  return obj[REACTIVE_FLAGS.UNWRAP] || obj;
 }

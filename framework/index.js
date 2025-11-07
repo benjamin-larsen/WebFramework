@@ -20,7 +20,8 @@ export {
   ref,
   shallowRef,
   isRef,
-  markRaw
+  markRaw,
+  toRaw
 } from './reactivity/reactive.js';
 export {
   withoutTracking,
