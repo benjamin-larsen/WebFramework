@@ -436,7 +436,6 @@ export function watch(dep, callback, options = {}) {
   }
 
   effect.scheduler = () => {
-    queueJob(job)
     queueJob(job);
   };
 
