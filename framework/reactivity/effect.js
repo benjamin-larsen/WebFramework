@@ -371,13 +371,28 @@ export function watch(dep, callback, options = {}) {
   if (!callback && typeof dep !== 'function')
     throw Error('Watch Effect must be provided a Function.');
 
+  let hasMultipleDeps = false;
+
   if (isRef(dep)) {
     getter = () => dep.value;
+  } else if (Array.isArray(dep)) {
+    hasMultipleDeps = true;
+
+    getter = () =>
+      dep.map((subDep) => {
+        if (isRef(subDep)) {
+          return subDep.value;
+        } else if (typeof subDep === 'function') {
+          return subDep();
+        }
+      });
   } else if (typeof dep === 'function') {
     getter = dep;
   }
 
-  let oldValue = undefined;
+  let oldValue = hasMultipleDeps
+    ? new Array(dep.length).fill(undefined)
+    : undefined;
 
   const effect =
     async && !callback ? new AsyncEffect(getter) : new Effect(getter);
@@ -386,7 +401,12 @@ export function watch(dep, callback, options = {}) {
     if (callback) {
       const newValue = effect.run();
 
-      if (Object.is(newValue, oldValue)) return;
+      if (
+        hasMultipleDeps
+          ? !newValue.some((val, i) => !Object.is(val, oldValue[i]))
+          : Object.is(newValue, oldValue)
+      )
+        return;
 
       handleAsyncError(
         () => {
@@ -405,8 +425,9 @@ export function watch(dep, callback, options = {}) {
             e,
             { async }
           );
+          console.log(`Error occured while running Watcher.`, e, { async });
         }
-      )
+      );
 
       oldValue = newValue;
     } else {
@@ -416,6 +437,7 @@ export function watch(dep, callback, options = {}) {
 
   effect.scheduler = () => {
     queueJob(job)
+    queueJob(job);
   };
 
   if (immediate || !callback) {
