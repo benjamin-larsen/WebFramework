@@ -183,6 +183,146 @@ export class Effect {
   }
 }
 
+const microtaskPromise = Promise.resolve();
+
+function queueJob(job) {
+  if (typeof window.queueMicrotask === 'function') return window.queueMicrotask(job);
+
+  microtaskPromise.then(job);
+}
+
+export function awaitEffect(promise) {
+  const effect = activeEffect;
+
+  if (!effect) {
+    console.warn('awaitEffect: called outside of Effect.');
+    return promise;
+  }
+
+  if (!effect.async) {
+    console.warn(
+      'awaitEffect: async not available, Effect is either done running, or Effect is not Async.'
+    );
+    return promise;
+  }
+
+  const asyncStatus = effect.async;
+
+  const generateWrapper = (func) => {
+    return function (value) {
+      if (asyncStatus.aborted) return;
+      if (asyncStatus.finished) return func(value);
+
+      let prevEffect;
+
+      try {
+        // Queue Microtask to set Active Effect
+        // We do this because we assume that func() is a function queues a Microtask (like await).
+        queueJob(() => {
+          prevEffect = activeEffect;
+          activeEffect = effect;
+        });
+
+        func(value);
+      } finally {
+        // Queue Microtask to restore Previous Effect
+        // We do this because we assume that func() queued a previous microtask, so that it runs immediately after running the next.
+        queueJob(() => {
+          activeEffect = prevEffect;
+        });
+      }
+    };
+  };
+
+  return {
+    then(onFulfilled, onRejected) {
+      const wrappedFulfilled =
+        typeof onFulfilled === 'function'
+          ? generateWrapper(onFulfilled)
+          : onFulfilled;
+
+      const wrappedRejected =
+        typeof onRejected === 'function'
+          ? generateWrapper(onRejected)
+          : onRejected;
+
+      return promise.then(wrappedFulfilled, wrappedRejected);
+    }
+  };
+}
+
+export class AsyncEffect extends Effect {
+  constructor(func) {
+    super(func);
+
+    this.state |= EFFECT_STATES.ASYNC_EFFECT;
+    this.async = null;
+  }
+
+  run(...args) {
+    if (!this.isEnabled()) {
+      console.warn('Attempted to run a destroyed Effect.');
+      return undefined;
+    }
+
+    if (this.async) {
+      this.async.aborted = true;
+    }
+
+    const asyncStatus = { aborted: false, finished: false };
+
+    this.async = asyncStatus;
+
+    this.preTracking();
+
+    const prevEffect = activeEffect;
+    activeEffect = this;
+
+    try {
+      try {
+        const result = this.func(...args);
+
+        if (
+          result !== null &&
+          typeof result === 'object' &&
+          typeof result.then === 'function'
+        ) {
+          const postTracking = AsyncEffect.prototype.postTracking.bind(
+            this,
+            asyncStatus
+          );
+
+          result.then(postTracking, postTracking);
+        } else {
+          this.postTracking();
+        }
+
+        return result;
+      } catch {
+        this.postTracking();
+      }
+    } finally {
+      activeEffect = prevEffect;
+    }
+  }
+
+  postTracking(asyncStatus) {
+    asyncStatus.finished = true;
+    this.async = null;
+
+    super.postTracking();
+  }
+
+  destroy() {
+    if (this.async) {
+      this.async.aborted = true;
+      this.async = null;
+    }
+
+    super.destroy();
+  }
+}
+
 function subscribe(target, subscriber) {
   let dep = targetMap.get(target);
 
@@ -218,21 +358,13 @@ export function withoutTracking(func) {
   }
 }
 
-const microtaskPromise = Promise.resolve();
-
-function queueJob(job) {
-  if (typeof window.queueMicrotask === 'function') return window.queueMicrotask(job);
-
-  microtaskPromise.then(job);
-}
-
 export function watch(dep, callback, options = {}) {
   if (!currentInstance)
     throw Error('Attempted to call watch() outside Instance');
 
   const instance = currentInstance;
 
-  const { immediate = false } = options;
+  const { immediate = false, async = false } = options;
 
   let getter = () => undefined;
 
@@ -247,7 +379,8 @@ export function watch(dep, callback, options = {}) {
 
   let oldValue = undefined;
 
-  const effect = new Effect(getter);
+  const effect =
+    async && !callback ? new AsyncEffect(getter) : new Effect(getter);
 
   function job() {
     if (callback) {
@@ -306,4 +439,8 @@ export function watch(dep, callback, options = {}) {
 
 export function watchEffect(callback, options = {}) {
   return watch(callback, null, options);
+}
+
+export function watchAsyncEffect(callback, options = {}) {
+  return watch(callback, null, { async: true, ...options });
 }

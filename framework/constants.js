@@ -35,8 +35,14 @@ export const NAMESPACES = {
 export const NAMESPACES_TAGS = { svg: NAMESPACES.svg, math: NAMESPACES.math };
 
 export const EFFECT_STATES = {
+  /* If ENABLED is not present, Effect is destroyed and can no logner be used. */
   ENABLED: 1 << 0,
+  /* If PAUSED is present, trigger() will temporarily be queued until resumed. */
   PAUSED: 1 << 1,
+  /* If RUNNING is present, it means that the effect is running function. */
   RUNNING: 1 << 2,
-  AWAITING_EFFECT: 1 << 3
+  /* If AWAITING_EFFECT is present, trigger() will be called when Effect resumes. */
+  AWAITING_EFFECT: 1 << 3,
+  /* If ASYNC_EFFECT is present, the Effect will setup nesscary components for awaitEffect */
+  ASYNC_EFFECT: 1 << 4
 };

@@ -29,7 +29,10 @@ export {
   withoutTracking,
   watch,
   watchEffect,
-  Effect
+  watchAsyncEffect,
+  Effect,
+  AsyncEffect,
+  awaitEffect
 } from './reactivity/effect.js';
 export { default as Debugger } from './debug/index.js';
 export { usePlugin } from './plugins.js';
