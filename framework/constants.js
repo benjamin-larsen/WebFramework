@@ -34,6 +34,8 @@ export const NAMESPACES = {
 
 export const NAMESPACES_TAGS = { svg: NAMESPACES.svg, math: NAMESPACES.math };
 
+export const ITERATE_KEY = Symbol('iterate_key');
+
 export const EFFECT_STATES = {
   /* If ENABLED is not present, Effect is destroyed and can no logner be used. */
   ENABLED: 1 << 0,
@@ -45,4 +47,12 @@ export const EFFECT_STATES = {
   AWAITING_EFFECT: 1 << 3,
   /* If ASYNC_EFFECT is present, the Effect will setup nesscary components for awaitEffect */
   ASYNC_EFFECT: 1 << 4
+};
+
+export const TRIGGER_TYPES = {
+  ADD: 0,
+  SET: 1,
+  DELETE: 2,
+  CLEAR: 3,
+  UPDATE_ARRAY: 4
 };

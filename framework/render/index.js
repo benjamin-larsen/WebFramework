@@ -2,7 +2,7 @@ import { ComponentNode } from '../vnode.js';
 import { refreshComponentAnchor } from '../anchor.js';
 import { patch } from './patching.js';
 import { INSTANCE_STATES } from '../constants.js';
-import { setCurrentRoot, setCurrentInstance } from '../reactivity/effect.js';
+import { setCurrentInstance } from '../reactivity/effect.js';
 import { shallowReadonly } from '../reactivity/reactive.js';
 
 let shouldTrackTime = false;
@@ -46,11 +46,8 @@ class RenderQueue {
     for (const componentInstance of items) {
       if (!componentInstance.vnode) continue;
 
-      setCurrentRoot(componentInstance);
       renderNode(componentInstance.vnode);
     }
-
-    setCurrentRoot(null);
 
     for (const dir of dirs) {
       if (!dir.effect) continue;

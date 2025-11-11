@@ -51,3 +51,13 @@ export function handleAsyncError(func, self, onError, ...args) {
     return null;
   }
 }
+
+// Code from Vue (@vue/shared)
+export function isIntegerKey(key) {
+  return (
+    typeof key === 'string' &&
+    key !== 'NaN' &&
+    key[0] !== '-' &&
+    '' + parseInt(key, 10) === key
+  );
+}

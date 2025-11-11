@@ -1,5 +1,17 @@
-import { REACTIVE_FLAGS } from '../constants.js';
+import { REACTIVE_FLAGS, ITERATE_KEY, TRIGGER_TYPES } from '../constants.js';
 import { track, trigger } from './effect.js';
+import {
+  reactiveCollectionHandler,
+  shallowReactiveCollectionHandler,
+  readonlyCollectionHandler,
+  shallowReadonlyCollectionHandler
+} from './collectionMethods.js';
+import {
+  reactiveArrayMethods,
+  shallowReactiveArrayMethods,
+  readonlyArrayMethods,
+  shallowReadonlyArrayMethods
+} from './arrayMethods.js';
 
 const reactiveMap = new WeakMap();
 const shallowReactiveMap = new WeakMap();
@@ -7,16 +19,40 @@ const readonlyMap = new WeakMap();
 const shallowReadonlyMap = new WeakMap();
 const markedRawMap = new WeakSet();
 
+function hasOwnProperty(key) {
+  const keyType = typeof key;
+
+  if (keyType !== 'string' && keyType !== 'symbol') {
+    key = String(key);
+  }
+
+  const rawTarget = toRaw(this);
+  track(rawTarget, key);
+
+  return rawTarget.hasOwnProperty(key);
+}
+
 const reactiveHandler = {
-  get(target, prop) {
+  get(target, prop, receiver) {
     if (prop === REACTIVE_FLAGS.UNWRAP) return target;
     if (prop === REACTIVE_FLAGS.IS_REACTIVE) {
       return true;
     }
 
-    track(target);
+    if (prop === 'hasOwnProperty') return hasOwnProperty;
 
-    const value = Reflect.get(target, prop);
+    let arrMethod;
+    if (
+      Array.isArray(target) &&
+      prop in target &&
+      (arrMethod = reactiveArrayMethods[prop])
+    ) {
+      return arrMethod;
+    }
+
+    track(target, prop);
+
+    const value = Reflect.get(target, prop, receiver);
 
     if (
       value !== null &&
@@ -29,13 +65,21 @@ const reactiveHandler = {
     }
   },
 
-  set(target, prop, value) {
-    const shouldTrigger = !Object.is(target[prop], value);
+  set(target, prop, value, receiver) {
+    const hadValue = prop in target;
+    const oldValue = hadValue ? target[prop] : undefined;
+    const shouldTrigger = !hadValue || !Object.is(oldValue, value);
 
-    const success = Reflect.set(target, prop, value);
+    const success = Reflect.set(target, prop, value, receiver);
 
     if (success && shouldTrigger) {
-      trigger(target);
+      trigger(
+        target,
+        hadValue ? TRIGGER_TYPES.SET : TRIGGER_TYPES.ADD,
+        prop,
+        value,
+        oldValue
+      );
     }
 
     return success;
@@ -44,13 +88,13 @@ const reactiveHandler = {
   has(target, prop) {
     const has = Reflect.has(target, prop);
 
-    track(target);
+    track(target, prop);
 
     return has;
   },
 
   ownKeys(target) {
-    track(target);
+    track(target, ITERATE_KEY);
 
     return Reflect.ownKeys(target);
   },
@@ -61,7 +105,7 @@ const reactiveHandler = {
     const success = Reflect.deleteProperty(target, prop);
 
     if (success && shouldTrigger) {
-      trigger(target);
+      trigger(target, TRIGGER_TYPES.DELETE, prop, undefined);
     }
 
     return success;
@@ -69,15 +113,26 @@ const reactiveHandler = {
 };
 
 const shallowReactiveHandler = {
-  get(target, prop) {
+  get(target, prop, receiver) {
     if (prop === REACTIVE_FLAGS.UNWRAP) return target;
     if (prop === REACTIVE_FLAGS.IS_REACTIVE) {
       return true;
     }
 
-    track(target);
+    if (prop === 'hasOwnProperty') return hasOwnProperty;
 
-    return Reflect.get(target, prop);
+    let arrMethod;
+    if (
+      Array.isArray(target) &&
+      prop in target &&
+      (arrMethod = shallowReactiveArrayMethods[prop])
+    ) {
+      return arrMethod;
+    }
+
+    track(target, prop);
+
+    return Reflect.get(target, prop, receiver);
   },
 
   set: reactiveHandler.set,
@@ -90,13 +145,22 @@ const shallowReactiveHandler = {
 };
 
 const readonlyHandler = {
-  get(target, prop) {
+  get(target, prop, receiver) {
     if (prop === REACTIVE_FLAGS.UNWRAP) return target;
     if (prop === REACTIVE_FLAGS.IS_READONLY) {
       return true;
     }
 
-    const value = Reflect.get(target, prop);
+    let arrMethod;
+    if (
+      Array.isArray(target) &&
+      prop in target &&
+      (arrMethod = readonlyArrayMethods[prop])
+    ) {
+      return arrMethod;
+    }
+
+    const value = Reflect.get(target, prop, receiver);
 
     if (
       value !== null &&
@@ -145,13 +209,22 @@ const readonlyHandler = {
 };
 
 const shallowReadonlyHandler = {
-  get(target, prop) {
+  get(target, prop, receiver) {
     if (prop === REACTIVE_FLAGS.UNWRAP) return target;
     if (prop === REACTIVE_FLAGS.IS_READONLY) {
       return true;
     }
 
-    return Reflect.get(target, prop);
+    let arrMethod;
+    if (
+      Array.isArray(target) &&
+      prop in target &&
+      (arrMethod = shallowReadonlyArrayMethods[prop])
+    ) {
+      return arrMethod;
+    }
+
+    return Reflect.get(target, prop, receiver);
   },
 
   set: readonlyHandler.set,
@@ -163,34 +236,45 @@ const shallowReadonlyHandler = {
   deleteProperty: readonlyHandler.deleteProperty
 };
 
-function canReact(target) {
-  if (target === null || typeof target !== 'object') return false;
-  if (markedRawMap.has(target)) return false;
+function getTargetType(target) {
+  if (markedRawMap.has(target)) return null;
 
   const type = Object.prototype.toString.call(target).slice(8, -1);
 
   switch (type) {
     case 'Object':
-    case 'Array':
+    case 'Array': {
+      return 'standard';
+    }
+
     case 'Map':
     case 'Set':
     case 'WeakMap':
     case 'WeakSet': {
-      return true;
+      return 'collection';
     }
 
     default: {
-      return false;
+      return null;
     }
   }
 }
 
 export function reactive(target) {
-  if (!canReact(target)) return target;
+  if (target === null || typeof target !== 'object') return target;
   if (target[REACTIVE_FLAGS.IS_REACTIVE] || target[REACTIVE_FLAGS.IS_READONLY])
     return target;
-  if (reactiveMap.has(target)) return reactiveMap.get(target);
-  const proxy = new Proxy(target, reactiveHandler);
+
+  const existing = reactiveMap.get(target);
+  if (existing) return existing;
+
+  const targetType = getTargetType(target);
+  if (targetType === null) return target;
+
+  const proxy = new Proxy(
+    target,
+    targetType === 'standard' ? reactiveHandler : reactiveCollectionHandler
+  );
 
   reactiveMap.set(target, proxy);
 
@@ -198,11 +282,22 @@ export function reactive(target) {
 }
 
 export function shallowReactive(target) {
-  if (!canReact(target)) return target;
+  if (target === null || typeof target !== 'object') return target;
   if (target[REACTIVE_FLAGS.IS_REACTIVE] || target[REACTIVE_FLAGS.IS_READONLY])
     return target;
-  if (shallowReactiveMap.has(target)) return shallowReactiveMap.get(target);
-  const proxy = new Proxy(target, shallowReactiveHandler);
+
+  const existing = shallowReactiveMap.get(target);
+  if (existing) return existing;
+
+  const targetType = getTargetType(target);
+  if (targetType === null) return target;
+
+  const proxy = new Proxy(
+    target,
+    targetType === 'standard'
+      ? shallowReactiveHandler
+      : shallowReactiveCollectionHandler
+  );
 
   shallowReactiveMap.set(target, proxy);
 
@@ -210,15 +305,23 @@ export function shallowReactive(target) {
 }
 
 export function readonly(target) {
-  if (!canReact(target)) return target;
+  if (target === null || typeof target !== 'object') return target;
   if (target[REACTIVE_FLAGS.IS_READONLY]) return target;
 
   if (target[REACTIVE_FLAGS.IS_REACTIVE]) {
     target = target[REACTIVE_FLAGS.UNWRAP];
   }
 
-  if (readonlyMap.has(target)) return readonlyMap.get(target);
-  const proxy = new Proxy(target, readonlyHandler);
+  const existing = readonlyMap.get(target);
+  if (existing) return existing;
+
+  const targetType = getTargetType(target);
+  if (targetType === null) return target;
+
+  const proxy = new Proxy(
+    target,
+    targetType === 'standard' ? readonlyHandler : readonlyCollectionHandler
+  );
 
   readonlyMap.set(target, proxy);
 
@@ -226,15 +329,25 @@ export function readonly(target) {
 }
 
 export function shallowReadonly(target) {
-  if (!canReact(target)) return target;
+  if (target === null || typeof target !== 'object') return target;
   if (target[REACTIVE_FLAGS.IS_READONLY]) return target;
 
   if (target[REACTIVE_FLAGS.IS_REACTIVE]) {
     target = target[REACTIVE_FLAGS.UNWRAP];
   }
 
-  if (shallowReadonlyMap.has(target)) return shallowReadonlyMap.get(target);
-  const proxy = new Proxy(target, shallowReadonlyHandler);
+  const existing = shallowReadonlyMap.get(target);
+  if (existing) return existing;
+
+  const targetType = getTargetType(target);
+  if (targetType === null) return target;
+
+  const proxy = new Proxy(
+    target,
+    targetType === 'standard'
+      ? shallowReadonlyHandler
+      : shallowReadonlyCollectionHandler
+  );
 
   shallowReadonlyMap.set(target, proxy);
 
@@ -242,12 +355,14 @@ export function shallowReadonly(target) {
 }
 
 export function markRaw(obj) {
-  if (!canReact(obj)) return obj;
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (getTargetType(obj) === null) return obj;
 
   markedRawMap.add(obj);
 
   return obj;
 }
+
 export function toRaw(obj) {
   if (obj === null || typeof obj !== 'object') return obj;
 

@@ -37,6 +37,13 @@ function fullReload(instance, newComponent) {
   // Cleanup old
   instance.callHook('onDestroy');
   instance.data = {};
+
+  for (const watcher of instance.watchers) {
+    watcher.destroy();
+  }
+
+  instance.watchers = [];
+
   instance.status = INSTANCE_STATES.BEFORE_MOUNT;
 
   // Setup new

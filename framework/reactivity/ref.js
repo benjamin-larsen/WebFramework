@@ -74,3 +74,10 @@ export function shallowRef(initValue) {
   }
   return new ReactiveRef(initValue, true);
 }
+
+export function triggerRef(obj) {
+  if (!isRef(obj)) return;
+  if (!obj.dep) return;
+
+  obj.dep.trigger();
+}

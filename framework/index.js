@@ -20,11 +20,7 @@ export {
   markRaw,
   toRaw
 } from './reactivity/reactive.js';
-export {
-  ref,
-  shallowRef,
-  isRef
-} from './reactivity/ref.js'
+export { ref, shallowRef, isRef, triggerRef } from './reactivity/ref.js';
 export {
   withoutTracking,
   watch,
@@ -32,7 +28,8 @@ export {
   watchAsyncEffect,
   Effect,
   AsyncEffect,
-  awaitEffect
+  awaitEffect,
+  forceTrigger
 } from './reactivity/effect.js';
 export { default as Debugger } from './debug/index.js';
 export { usePlugin } from './plugins.js';

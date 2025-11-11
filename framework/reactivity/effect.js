@@ -1,20 +1,27 @@
 import { isRef } from './ref.js';
-import { EFFECT_STATES } from '../constants.js';
-import { handleAsyncError } from '../helpers.js';
+import { toRaw } from './reactive.js';
+import { EFFECT_STATES, ITERATE_KEY, TRIGGER_TYPES } from '../constants.js';
+import { handleAsyncError, isIntegerKey } from '../helpers.js';
 
 const targetMap = new Map();
 let activeEffect = null;
 
-let currentRoot = null; // Current Root is the Render Queue being triggered, no need to make stack as they should be done one-by-one.
+let trackHook = null;
+let triggerHook = null;
+
+export function setReactivityHooks(onTrack, onTrigger) {
+  trackHook = typeof onTrack === 'function' ? onTrack : null;
+  triggerHook = typeof onTrigger === 'function' ? onTrigger : null;
+}
+
+export function setActiveEffect(value) {
+  const prevEffect = activeEffect;
+  activeEffect = value;
+
+  return prevEffect;
+}
+
 let currentInstance = null;
-
-export function getCurrentRoot() {
-  return currentRoot;
-}
-
-export function setCurrentRoot(root) {
-  currentRoot = root;
-}
 
 export function getCurrentInstance() {
   return currentInstance;
@@ -34,10 +41,40 @@ class Subscription {
   }
 }
 
+let triggerQueue = new Set();
+let triggerQueued = false;
+
+function scheduleTrigger(effect) {
+  triggerQueue.add(effect);
+
+  if (!triggerQueued) {
+    triggerQueued = true;
+
+    queueJob(() => {
+      const effects = [...triggerQueue];
+      triggerQueue.clear();
+      triggerQueued = false;
+
+      for (const effect of effects) {
+        try {
+          effect.trigger();
+        } catch (e) {
+          console.log(
+            'Error occured while attempting to run Effect.',
+            effect,
+            e
+          );
+        }
+      }
+    });
+  }
+}
+
 export class Dependency {
-  constructor(target) {
+  constructor(target, key) {
     this.subs = new Map();
     this.target = target;
+    this.key = key;
   }
 
   track() {
@@ -48,7 +85,7 @@ export class Dependency {
 
   trigger() {
     for (const sub of this.subs.keys()) {
-      sub.trigger();
+      scheduleTrigger(sub);
     }
   }
 
@@ -67,7 +104,14 @@ export class Dependency {
   unsubscribe(subscriber) {
     this.subs.delete(subscriber);
 
+    const depsMap = targetMap.get(this.target);
+    if (!depsMap) return;
+
     if (this.subs.size === 0) {
+      depsMap.delete(this.key);
+    }
+
+    if (depsMap.size === 0) {
       targetMap.delete(this.target);
     }
   }
@@ -186,7 +230,8 @@ export class Effect {
 const microtaskPromise = Promise.resolve();
 
 function queueJob(job) {
-  if (typeof window.queueMicrotask === 'function') return window.queueMicrotask(job);
+  if (typeof window.queueMicrotask === 'function')
+    return window.queueMicrotask(job);
 
   microtaskPromise.then(job);
 }
@@ -323,28 +368,118 @@ export class AsyncEffect extends Effect {
   }
 }
 
-function subscribe(target, subscriber) {
-  let dep = targetMap.get(target);
+function subscribe(target, key, subscriber) {
+  let propsMap = targetMap.get(target);
+
+  if (!propsMap) {
+    propsMap = new Map();
+    targetMap.set(target, propsMap);
+  }
+
+  let dep = propsMap.get(key);
 
   if (!dep) {
-    dep = new Dependency(target);
-    targetMap.set(target, dep);
+    dep = new Dependency(target, key);
+    propsMap.set(key, dep);
   }
 
   dep.subscribe(subscriber);
 }
 
-export function track(target) {
+export function track(target, key) {
+  if (trackHook) trackHook(target, key);
+
   if (!activeEffect) return;
 
-  subscribe(target, activeEffect);
+  subscribe(target, key, activeEffect);
 }
 
-export function trigger(target) {
-  const dep = targetMap.get(target);
-  if (!dep) return;
+export function trigger(target, triggerType, key, newValue, oldValue) {
+  if (triggerHook) triggerHook(target, triggerType, key, newValue, oldValue);
 
-  dep.trigger();
+  const propsMap = targetMap.get(target);
+  if (!propsMap) return;
+
+  function sub(dep) {
+    if (dep) {
+      for (const effect of dep.subs.keys()) {
+        scheduleTrigger(effect);
+      }
+    }
+  }
+
+  if (triggerType === TRIGGER_TYPES.CLEAR) {
+    propsMap.forEach(sub);
+  } else if (triggerType === TRIGGER_TYPES.UPDATE_ARRAY) {
+    sub(propsMap.get(ITERATE_KEY));
+
+    const hasStart = typeof newValue === 'number';
+    const hasEnd = typeof oldValue === 'number';
+
+    for (const [key, dep] of propsMap) {
+      if (!isIntegerKey(key)) continue;
+      const parsedInt = parseInt(key);
+
+      if (hasStart && parsedInt < newValue) continue;
+      if (hasEnd && parsedInt >= newValue) continue;
+
+      sub(dep);
+    }
+  } else {
+    const type = Object.prototype.toString.call(target);
+    const isArray = type === '[object Array]';
+    const isCollection =
+      type === '[object Map]' ||
+      type === '[object Set]' ||
+      type === '[object WeakMap]' ||
+      type === '[object WeakSet]';
+
+    sub(propsMap.get(ITERATE_KEY));
+    sub(propsMap.get(key));
+
+    if (isArray && key === 'length') {
+      const newLength = Number(newValue) || 0;
+      const oldLength = Number(oldValue) || 0;
+
+      /*
+        Update indexes that would've been removed from the length changes.
+        No need to update indexes that would've been added from length changes, as it will be undefined anyway.
+      */
+
+      if (newLength < oldLength) {
+        for (const [key, dep] of propsMap) {
+          if (!isIntegerKey(key)) continue;
+
+          const index = parseInt(key, 10);
+          if (index < newLength) continue;
+
+          sub(dep);
+        }
+      }
+    }
+
+    switch (triggerType) {
+      case TRIGGER_TYPES.ADD: {
+        if (isArray && isIntegerKey(key)) {
+          sub(propsMap.get('length'));
+        } else if (isCollection) {
+          sub(propsMap.get('size'));
+        }
+        break;
+      }
+    }
+  }
+}
+
+export function forceTrigger(target) {
+  const propsMap = targetMap.get(toRaw(target));
+  if (!propsMap) return;
+
+  for (const dep of propsMap.values()) {
+    for (const effect of dep.subs.keys()) {
+      scheduleTrigger(effect);
+    }
+  }
 }
 
 export function withoutTracking(func) {
@@ -420,11 +555,6 @@ export function watch(dep, callback, options = {}) {
         },
         null,
         (e, async) => {
-          console.log(
-            `Error occured while running Watcher.`,
-            e,
-            { async }
-          );
           console.log(`Error occured while running Watcher.`, e, { async });
         }
       );
