@@ -1,3 +1,4 @@
 import Lazy from './Lazy.js';
+import Transition from './Transition.js';
 
-export default { Lazy };
+export default { Lazy, Transition };

@@ -56,7 +56,7 @@ export class FragmentNode {
 
     for (const child of this.children) {
       if (!child) continue;
-      child.unmount(DOMHandled);
+      child.unmount(DOMHandled, false);
     }
 
     // Prevent Memory Leak
@@ -83,10 +83,16 @@ export class ElementNode {
     this.el = null;
   }
 
-  unmount(DOMHandled = false) {
+  unmount(DOMHandled = false, isRoot = false) {
+    // if not isRoot it means a parent Element was unmounted.
+    if (this.transition && isRoot) {
+      this.transition.onLeave(this.el, this);
+      return;
+    }
+
     for (const child of this.children) {
       if (!child) continue;
-      child.unmount(true);
+      child.unmount(true, false);
     }
 
     if (isRef(this.properties.ref)) {
@@ -187,12 +193,12 @@ export class ComponentNode {
     this.instance = null;
   }
 
-  unmount(DOMHandled = false) {
+  unmount(DOMHandled = false, isRoot = false) {
     this.anchor = null;
 
     for (const child of this.children) {
       if (!child) continue;
-      child.unmount(DOMHandled);
+      child.unmount(DOMHandled, this.transition && isRoot);
     }
 
     // Prevent Memory Leak

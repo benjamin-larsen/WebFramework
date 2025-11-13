@@ -4,6 +4,7 @@ import { patch } from './patching.js';
 import { INSTANCE_STATES } from '../constants.js';
 import { setCurrentInstance } from '../reactivity/effect.js';
 import { shallowReadonly } from '../reactivity/reactive.js';
+import { setNodeTransition } from '../standardComponents/Transition.js';
 
 let shouldTrackTime = false;
 
@@ -117,6 +118,10 @@ export function renderNode(node, force) {
 
     if (!Array.isArray(nextChildren)) {
       throw Error('Render function must return a Fragment.');
+    }
+
+    if (node.transition) {
+      setNodeTransition(nextChildren, node.transition);
     }
 
     patch(node, nextChildren, node.el.namespaceURI);

@@ -23,6 +23,8 @@ export const REACTIVE_FLAGS = {
 export const EMPTY_PROPS = Object.freeze({});
 export const EMPTY_ARR = Object.freeze([]);
 
+export const TRANSITION_CLASS = Symbol('transition_class');
+
 export const NAMESPACES = {
   html: 'http://www.w3.org/1999/xhtml',
   svg: 'http://www.w3.org/2000/svg',

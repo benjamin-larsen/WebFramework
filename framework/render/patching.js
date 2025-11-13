@@ -9,7 +9,12 @@ import {
 } from '../vnode.js';
 import { ComponentInstance } from '../component.js';
 import { shallowCompareObj } from '../helpers.js';
-import { INSTANCE_STATES, NAMESPACES, NAMESPACES_TAGS } from '../constants.js';
+import {
+  INSTANCE_STATES,
+  NAMESPACES,
+  NAMESPACES_TAGS,
+  TRANSITION_CLASS
+} from '../constants.js';
 import { shallowReadonly } from '../reactivity/reactive.js';
 import { getCurrentInstance } from '../reactivity/effect.js';
 import {
@@ -72,8 +77,18 @@ function patchElement(parentNode, nextNode, prevNode, index, parentNamespace) {
 
     finishElementDirectives(prevNode, nextNode);
 
+    if (nextNode.el[TRANSITION_CLASS]) {
+      for (const className of nextNode.el[TRANSITION_CLASS]) {
+        nextNode.el.classList.add(className);
+      }
+    }
+
     return prevNode;
   } else {
+    if (nextNode.transition) {
+      nextNode.transition.beforeEnter();
+    }
+
     const { namespace, tag } = resolveElementTag(nextNode.tag, parentNamespace);
 
     const el = document.createElementNS(namespace, tag);
@@ -89,6 +104,10 @@ function patchElement(parentNode, nextNode, prevNode, index, parentNamespace) {
     );
 
     finishElementDirectives(null, nextNode);
+
+    if (nextNode.transition) {
+      nextNode.transition.onEnter(nextNode.el);
+    }
 
     return nextNode;
   }
@@ -288,7 +307,7 @@ function resolveMatchedChild(prevNode, nextNode, nextType) {
     (prevType === ElementNode && prevNode.tag !== nextNode.tag) ||
     (prevType === ComponentNode && prevNode.component !== nextNode.component)
   ) {
-    prevNode.unmount();
+    prevNode.unmount(false, true);
 
     return null;
   }
@@ -330,7 +349,7 @@ export function patch(parentNode, nextChildren, namespace) {
         // Stash Previous Node
         unmountList.set(diffData.prevKey, prevNode);
       } else if (prevNode) {
-        prevNode.unmount();
+        prevNode.unmount(false, true);
       }
 
       // Prev Node was either moved or unmounted. Do not re-use.
@@ -386,7 +405,7 @@ export function patch(parentNode, nextChildren, namespace) {
 
     // check if this is VNode rather than just object, copy on mount() as well, and check if any changes made to patch() was not made to mount()
     if (nextNode === null || typeof nextNode !== 'object') {
-      if (prevNode) prevNode.unmount();
+      if (prevNode) prevNode.unmount(false, true);
       parentNode.children[index] = null;
       continue;
     }
@@ -419,11 +438,11 @@ export function patch(parentNode, nextChildren, namespace) {
   ) {
     const item = parentNode.children[index];
 
-    if (item) item.unmount();
+    if (item) item.unmount(false, true);
   }
 
   for (const [_, orphan] of unmountList) {
-    orphan.unmount();
+    orphan.unmount(false, true);
   }
 
   parentNode.children.length = nextChildren.length;
