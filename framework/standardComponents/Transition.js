@@ -30,6 +30,89 @@ function clearTransitionClass(el) {
   el[TRANSITION_CLASS].clear();
 }
 
+function getStyleList(styles, style) {
+  const value = styles[style];
+  if (typeof value !== 'string') return [];
+
+  return value.split(', ');
+}
+
+function computeCSSTime(rawTime) {
+  if (!rawTime) return 0;
+  if (!rawTime.endsWith('s')) return 0;
+
+  const num = Number(rawTime.slice(0, -1).replace(',', '.')) * 1000 || 0;
+
+  return num > 0 ? num : 0;
+}
+
+function computeIteration(rawTime) {
+  if (!rawTime) return 1;
+  if (rawTime === 'infinite') {
+    console.warn("<Transition> can't be provided with infinite iteartion.");
+    return null;
+  }
+
+  const num = Number(rawTime.replace(',', '.')) || 0;
+
+  return num > 0 ? num : 0;
+}
+
+function computeTimeout(delays, durations, iterations) {
+  if (durations.length === 0) return 0;
+
+  return Math.max(
+    ...durations.map((duration, index) => {
+      const iteration = computeIteration(iterations[index]);
+      if (iteration === null) return 0;
+
+      return (
+        computeCSSTime(duration) * iteration + computeCSSTime(delays[index])
+      );
+    })
+  );
+}
+
+function getTransitionInfo(el) {
+  const styles = window.getComputedStyle(el);
+
+  const transitionCount = getStyleList(styles, 'transitionProperty').length;
+  const tranDelay = getStyleList(styles, 'transitionDelay').slice(
+    0,
+    transitionCount
+  );
+  const tranDuration = getStyleList(styles, 'transitionDuration').slice(
+    0,
+    transitionCount
+  );
+  const tranTimeout = computeTimeout(tranDelay, tranDuration, []);
+
+  const animationCount = getStyleList(styles, 'animationName').length;
+  const animDelay = getStyleList(styles, 'animationDelay').slice(
+    0,
+    animationCount
+  );
+  const animDuration = getStyleList(styles, 'animationDuration').slice(
+    0,
+    animationCount
+  );
+  const animIterations = getStyleList(styles, 'animationIterationCount').slice(
+    0,
+    animationCount
+  );
+  const animTimeout = computeTimeout(animDelay, animDuration, animIterations);
+
+  const timeout = Math.max(animTimeout, tranTimeout);
+
+  console.log({tranDelay, tranDuration})
+
+  return {
+    timeout,
+    animationCount: animTimeout > 0 ? animationCount : 0,
+    transitionCount: tranTimeout > 0 ? transitionCount : 0
+  };
+}
+
 export function setNodeTransition(children, transition) {
   if (children.length === 0) return;
 
@@ -46,44 +129,11 @@ export function setNodeTransition(children, transition) {
   }
 }
 
-function useTransitionTracker(el) {
-  const obj = { hasTransition: false, hasAnimation: false, cancelled: false };
-
-  const transitionEvent = () => {
-    el.removeEventListener('transitionstart', transitionEvent);
-    if (obj.cancelled) return;
-    obj.hasTransition = true;
-  };
-
-  const animationEvent = () => {
-    el.removeEventListener('animationstart', animationEvent);
-    if (obj.cancelled) return;
-    obj.hasAnimation = true;
-  };
-
-  el.addEventListener('transitionstart', transitionEvent, { once: true });
-  el.addEventListener('animationstart', animationEvent, { once: true });
-
-  obj.cancel = () => {
-    obj.cancelled = true;
-
-    if (!obj.hasTransition) {
-      el.removeEventListener('transitionstart', transitionEvent);
-    }
-
-    if (!obj.hasAnimation) {
-      el.removeEventListener('animationstart', animationEvent);
-    }
-  };
-
-  return obj;
-}
-
 export default {
-  onCreated(ctx) {
+  onCreated(ctx, props) {
     ctx.pendingRemove = null;
     ctx.leavingNode = null;
-    ctx.hasMounted = false;
+    ctx.hasMounted = props.appear ? true : false;
 
     ctx.hooks = {
       beforeEnter(vnode) {
@@ -96,33 +146,41 @@ export default {
       onEnter(el) {
         if (!ctx.hasMounted) return;
 
+        const className = typeof ctx.props.name === 'string' ? ctx.props.name : 'transition';
+
         el._isEntering = true;
 
         if (!el[TRANSITION_CLASS]) {
           el[TRANSITION_CLASS] = new Set();
         }
 
-        const transitionTracker = useTransitionTracker(el);
+        addTransitionClass(el, `${className}-enter-from`);
+        addTransitionClass(el, `${className}-enter-active`);
 
-        addTransitionClass(el, 'transition-enter-from');
-        addTransitionClass(el, 'transition-enter-active');
+        let { timeout, animationCount, transitionCount } =
+          getTransitionInfo(el);
 
         const enter = (e) => {
           if (typeof e === 'object') {
             if (e.type === 'transitionend') {
-              transitionTracker.hasTransition = false;
+              transitionCount--;
+
+              if (transitionCount === 0) {
+                el.removeEventListener('transitionend', enter);
+              }
             } else if (e.type === 'animationend') {
-              transitionTracker.hasAnimation = false;
+              animationCount--;
+
+              if (animationCount === 0) {
+                el.removeEventListener('animationend', enter);
+              }
             }
 
-            el.removeEventListener(e.type, enter);
-
-            if (
-              transitionTracker.hasTransition ||
-              transitionTracker.hasAnimation
-            )
-              return false;
+            if (transitionCount !== 0 || animationCount !== 0) return false;
           }
+
+          el.removeEventListener('transitionend', enter);
+          el.removeEventListener('animationend', enter);
 
           if (!el._isEntering) return;
 
@@ -131,32 +189,26 @@ export default {
           clearTransitionClass(el);
         };
 
-        requestAnimationFrame(() => {
-          if (!el._isEntering) return;
+        if (transitionCount > 0) {
+          el.addEventListener('transitionend', enter);
+        }
 
-          el.addEventListener('animationend', enter, { once: true });
-          el.addEventListener('transitionend', enter, { once: true });
+        if (animationCount > 0) {
+          el.addEventListener('animationend', enter);
+        }
 
-          removeTransitionClass(el, 'transition-enter-from');
-          addTransitionClass(el, 'transition-enter-to');
-
+        if (timeout === 0 || (transitionCount === 0 && animationCount === 0)) {
+          enter();
+        } else {
           requestAnimationFrame(() => {
-            transitionTracker.cancel();
-            const { hasTransition, hasAnimation } = transitionTracker;
+            if (!el._isEntering) return;
 
-            if (!hasAnimation) {
-              el.removeEventListener('animationend', enter);
-            }
+            removeTransitionClass(el, `${className}-enter-from`);
+            addTransitionClass(el, `${className}-enter-to`);
 
-            if (!hasTransition) {
-              el.removeEventListener('transitionend', enter);
-            }
-
-            if (!hasAnimation && !hasTransition) {
-              enter();
-            }
+            setTimeout(enter, timeout + 10);
           });
-        });
+        }
       },
 
       onLeave(el, vnode) {
@@ -164,33 +216,41 @@ export default {
           ctx.pendingRemove();
         }
 
+        const className = typeof ctx.props.name === 'string' ? ctx.props.name : 'transition';
+
         el._isEntering = false;
         el._isLeaving = true;
-
-        const transitionTracker = useTransitionTracker(el);
 
         clearTransitionClass(el);
 
         // Dont need to use addTransitionClass, as element has left the vDOM.
-        el.classList.add('transition-leave-from');
-        el.classList.add('transition-leave-active');
+        el.classList.add(`${className}-leave-from`);
+        el.classList.add(`${className}-leave-active`);
+
+        let { timeout, animationCount, transitionCount } =
+          getTransitionInfo(el);
 
         const leave = (e) => {
           if (typeof e === 'object') {
             if (e.type === 'transitionend') {
-              transitionTracker.hasTransition = false;
+              transitionCount--;
+
+              if (transitionCount === 0) {
+                el.removeEventListener('transitionend', leave);
+              }
             } else if (e.type === 'animationend') {
-              transitionTracker.hasAnimation = false;
+              animationCount--;
+
+              if (animationCount === 0) {
+                el.removeEventListener('animationend', leave);
+              }
             }
 
-            el.removeEventListener(e.type, leave);
-
-            if (
-              transitionTracker.hasTransition ||
-              transitionTracker.hasAnimation
-            )
-              return false;
+            if (transitionCount !== 0 || animationCount !== 0) return false;
           }
+
+          el.removeEventListener('transitionend', leave);
+          el.removeEventListener('animationend', leave);
 
           if (!el._isLeaving) return;
 
@@ -203,32 +263,26 @@ export default {
         ctx.leavingNode = vnode;
         ctx.pendingRemove = leave;
 
-        requestAnimationFrame(() => {
-          if (!el._isLeaving) return;
+        if (transitionCount > 0) {
+          el.addEventListener('transitionend', leave);
+        }
 
-          el.addEventListener('animationend', leave, { once: true });
-          el.addEventListener('transitionend', leave, { once: true });
+        if (animationCount > 0) {
+          el.addEventListener('animationend', leave);
+        }
 
-          el.classList.remove('transition-leave-from');
-          el.classList.add('transition-leave-to');
-
+        if (timeout === 0 || (transitionCount === 0 && animationCount === 0)) {
+          leave();
+        } else {
           requestAnimationFrame(() => {
-            transitionTracker.cancel();
-            const { hasTransition, hasAnimation } = transitionTracker;
+            if (!el._isLeaving) return;
 
-            if (!hasAnimation) {
-              el.removeEventListener('animationend', leave);
-            }
+            el.classList.remove(`${className}-leave-from`);
+            el.classList.add(`${className}-leave-to`);
 
-            if (!hasTransition) {
-              el.removeEventListener('transitionend', leave);
-            }
-
-            if (!hasAnimation && !hasTransition) {
-              leave();
-            }
+            setTimeout(leave, timeout + 10);
           });
-        });
+        }
       }
     };
   },
