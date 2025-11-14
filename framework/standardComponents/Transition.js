@@ -219,9 +219,9 @@ export default {
         el._isEntering = false;
         el._isLeaving = true;
 
-        void el.offsetWidth;
-
         clearTransitionClass(el);
+
+        void (el ? el.ownerDocument : document).body.offsetHeight;
 
         // Dont need to use addTransitionClass, as element has left the vDOM.
         el.classList.add(`${className}-leave-from`);
