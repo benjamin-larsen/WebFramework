@@ -316,10 +316,7 @@ export class ComponentInstance {
     const propName = `on${eventname.slice(0, 1).toUpperCase()}${eventname.slice(1)}`;
     const func = this.vnode.properties[propName];
 
-    if (typeof func !== 'function') {
-      console.warn(`Event "${eventname}" was emitted without recipient.`);
-      return;
-    }
+    if (typeof func !== 'function') return;
 
     handleAsyncError(
       func,

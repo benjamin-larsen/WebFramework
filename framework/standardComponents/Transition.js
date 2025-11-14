@@ -348,5 +348,7 @@ export default {
     setNodeTransition(children, ctx.hooks);
 
     return children;
-  }
+  },
+
+  expose: ['cancel']
 };
