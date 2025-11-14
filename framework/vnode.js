@@ -194,6 +194,8 @@ export class ComponentNode {
   }
 
   unmount(DOMHandled = false, isRoot = false) {
+    this.instance.callHook('beforeDestroy');
+
     this.anchor = null;
 
     for (const child of this.children) {
