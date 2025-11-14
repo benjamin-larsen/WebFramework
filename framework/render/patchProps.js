@@ -4,7 +4,7 @@ import { isRef } from '../reactivity/ref.js';
 function patchClassName(prevNode, nextNode, classList) {
   let computedClass = classList || '';
 
-  if (classList === null || classList === undefined) {
+  if (classList === null || classList === undefined || classList === false) {
     if (prevNode.properties.class && prevNode.el) {
       prevNode.el.removeAttribute('class');
     }
@@ -42,7 +42,7 @@ function hyphenate(str) {
 function patchStyles(prevNode, nextNode, rawStyles) {
   let computedStyle = rawStyles || '';
 
-  if (rawStyles === null || rawStyles === undefined) {
+  if (rawStyles === null || rawStyles === undefined || rawStyles === false) {
     if (prevNode.properties.style && prevNode.el) {
       prevNode.el.removeAttribute('style');
     }
@@ -85,7 +85,7 @@ function patchAttribute(prevNode, nextNode, attr, value) {
 
   const hasPrevAttr = prevNode && prevNode.properties[attr];
 
-  if (value === null || value === undefined) {
+  if (value === null || value === undefined || value === false) {
     if (hasPrevAttr && prevNode.el) {
       if (attrNamespace) {
         prevNode.el.removeAttributeNS(attrNamespace, attr);
@@ -210,7 +210,7 @@ export function patchProps(prevNode, nextNode, namespace) {
   for (const prop in nextNode.properties) {
     const value = nextNode.properties[prop];
 
-    if (value === null || value === undefined) continue;
+    if (value === null || value === undefined || value === false) continue;
 
     patchProp(prevNode, nextNode, prop, value, namespace);
   }
@@ -219,7 +219,8 @@ export function patchProps(prevNode, nextNode, namespace) {
     for (const prop in prevNode.properties) {
       const nextProp = nextNode.properties[prop];
 
-      if (nextProp !== null && nextProp !== undefined) continue;
+      if (nextProp !== null && nextProp !== undefined && nextProp !== false)
+        continue;
 
       patchProp(prevNode, nextNode, prop, null, namespace);
     }
