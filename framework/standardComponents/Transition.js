@@ -1,5 +1,6 @@
 import { TRANSITION_CLASS } from '../constants.js';
 import { ComponentNode, ElementNode } from '../vnode.js';
+import { evalDiff } from '../render/patching.js';
 
 function getInnerChild(child) {
   if (!child) return [];
@@ -81,10 +82,12 @@ function useTransitionTracker(el) {
 export default {
   onCreated(ctx) {
     ctx.pendingRemove = null;
+    ctx.leavingNode = null;
     ctx.hasMounted = false;
 
     ctx.hooks = {
-      beforeEnter() {
+      beforeEnter(vnode) {
+        if (!evalDiff(ctx.leavingNode, vnode).isSame) return;
         if (ctx.pendingRemove) {
           ctx.pendingRemove();
         }
@@ -191,11 +194,13 @@ export default {
 
           if (!el._isLeaving) return;
 
+          ctx.leavingNode = null;
           ctx.pendingRemove = null;
           el._isLeaving = false;
           vnode.unmount(false, false);
         };
 
+        ctx.leavingNode = vnode;
         ctx.pendingRemove = leave;
 
         requestAnimationFrame(() => {

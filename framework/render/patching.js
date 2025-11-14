@@ -86,7 +86,7 @@ function patchElement(parentNode, nextNode, prevNode, index, parentNamespace) {
     return prevNode;
   } else {
     if (nextNode.transition) {
-      nextNode.transition.beforeEnter();
+      nextNode.transition.beforeEnter(nextNode);
     }
 
     const { namespace, tag } = resolveElementTag(nextNode.tag, parentNamespace);
@@ -196,7 +196,7 @@ function getNodeType(node) {
   return node.constructor;
 }
 
-function evalDiff(prevNode, nextNode) {
+export function evalDiff(prevNode, nextNode) {
   const prevType = getNodeType(prevNode);
   const nextType = getNodeType(nextNode);
 
