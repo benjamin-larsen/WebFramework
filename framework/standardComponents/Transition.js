@@ -1,4 +1,8 @@
-import { TRANSITION_CLASS } from '../constants.js';
+import {
+  TRANSITION_CLASS,
+  TRANSITION_ENTER_CALLBACK,
+  TRANSITION_LEAVE_CALLBACK
+} from '../constants.js';
 import { ComponentNode, ElementNode } from '../vnode.js';
 import { evalDiff } from '../render/patching.js';
 
@@ -49,7 +53,7 @@ function computeCSSTime(rawTime) {
 function computeIteration(rawTime) {
   if (!rawTime) return 1;
   if (rawTime === 'infinite') {
-    console.warn("<Transition> can't be provided with infinite iteartion.");
+    console.warn("<Transition> can't be provided with infinite iteration.");
     return null;
   }
 
@@ -114,37 +118,65 @@ function getTransitionInfo(el) {
 export function setNodeTransition(children, transition) {
   if (children.length === 0) return;
 
+  const rootChild = children[0];
+
   if (
     children.length > 1 ||
-    typeof children[0] !== 'object' ||
-    (children[0].constructor !== ElementNode &&
-      children[0].constructor !== ComponentNode)
+    typeof rootChild !== 'object' ||
+    (rootChild.constructor !== ElementNode &&
+      rootChild.constructor !== ComponentNode)
   ) {
     console.warn('<transition> expects a single Component or Element.');
   } else {
-    if (children[0].transition) return;
-    children[0].transition = transition;
+    if (rootChild.transition) return;
+    rootChild.transition = transition;
   }
 }
 
 export default {
   onCreated(ctx, props) {
-    ctx.pendingRemove = null;
-    ctx.leavingNode = null;
     ctx.hasMounted = props.appear ? true : false;
+
+    // Need entire VNode for comparison
+    let leavingNode = null;
+
+    // Only need Element to get callback
+    let enteringEl = null;
+
+    function cancelCurrentLeave() {
+      if (
+        leavingNode &&
+        leavingNode.el &&
+        leavingNode.el[TRANSITION_LEAVE_CALLBACK]
+      ) {
+        leavingNode.el[TRANSITION_LEAVE_CALLBACK](undefined, true);
+      }
+    }
+
+    function cancelCurrentEnter() {
+      if (enteringEl && enteringEl[TRANSITION_ENTER_CALLBACK]) {
+        enteringEl[TRANSITION_ENTER_CALLBACK](undefined, true);
+      }
+    }
+
+    ctx.cancel = function () {
+      cancelCurrentLeave();
+      cancelCurrentEnter();
+    };
 
     ctx.hooks = {
       beforeEnter(vnode) {
-        if (!evalDiff(ctx.leavingNode, vnode).isSame) return;
-        if (ctx.pendingRemove) {
-          ctx.pendingRemove();
-        }
+        if (!evalDiff(leavingNode, vnode).isSame) return;
+        cancelCurrentLeave();
       },
 
       onEnter(el) {
         if (!ctx.hasMounted) return;
 
-        const className = typeof ctx.props.name === 'string' ? ctx.props.name : 'transition';
+        cancelCurrentEnter();
+
+        const className =
+          typeof ctx.props.name === 'string' ? ctx.props.name : 'transition';
 
         el._isEntering = true;
 
@@ -158,7 +190,7 @@ export default {
         let { timeout, animationCount, transitionCount } =
           getTransitionInfo(el);
 
-        const enter = (e) => {
+        const enter = (e, isCancel = false) => {
           if (typeof e === 'object') {
             if (e.type === 'transitionend') {
               transitionCount--;
@@ -182,10 +214,19 @@ export default {
 
           if (!el._isEntering) return;
 
+          enteringEl = null;
           el._isEntering = false;
+          el[TRANSITION_ENTER_CALLBACK] = undefined;
 
           clearTransitionClass(el);
+
+          if (!isCancel) {
+            ctx.$emit('afterEnter');
+          }
         };
+
+        enteringEl = el;
+        el[TRANSITION_ENTER_CALLBACK] = enter;
 
         if (transitionCount > 0) {
           el.addEventListener('transitionend', enter);
@@ -210,16 +251,17 @@ export default {
       },
 
       onLeave(el, vnode) {
-        if (ctx.pendingRemove) {
-          ctx.pendingRemove();
+        cancelCurrentLeave();
+
+        const className =
+          typeof ctx.props.name === 'string' ? ctx.props.name : 'transition';
+
+        // Cancel Enter on same Element
+        if (el[TRANSITION_ENTER_CALLBACK]) {
+          el[TRANSITION_ENTER_CALLBACK](undefined, true);
         }
 
-        const className = typeof ctx.props.name === 'string' ? ctx.props.name : 'transition';
-
-        el._isEntering = false;
         el._isLeaving = true;
-
-        clearTransitionClass(el);
 
         void (el ? el.ownerDocument : document).body.offsetHeight;
 
@@ -230,7 +272,7 @@ export default {
         let { timeout, animationCount, transitionCount } =
           getTransitionInfo(el);
 
-        const leave = (e) => {
+        const leave = (e, isCancel = false) => {
           if (typeof e === 'object') {
             if (e.type === 'transitionend') {
               transitionCount--;
@@ -254,14 +296,18 @@ export default {
 
           if (!el._isLeaving) return;
 
-          ctx.leavingNode = null;
-          ctx.pendingRemove = null;
+          leavingNode = null;
           el._isLeaving = false;
+          el[TRANSITION_LEAVE_CALLBACK] = undefined;
           vnode.unmount(false, false);
+
+          if (!isCancel) {
+            ctx.$emit('afterLeave');
+          }
         };
 
-        ctx.leavingNode = vnode;
-        ctx.pendingRemove = leave;
+        leavingNode = vnode;
+        el[TRANSITION_LEAVE_CALLBACK] = leave;
 
         if (transitionCount > 0) {
           el.addEventListener('transitionend', leave);
@@ -291,11 +337,8 @@ export default {
     ctx.hasMounted = true;
   },
 
-  onDestroy(ctx) {
-    if (ctx.pendingRemove) {
-      ctx.pendingRemove();
-    }
-
+  beforeDestroy(ctx) {
+    ctx.cancel();
     ctx.hooks = null;
   },
 

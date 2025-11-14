@@ -313,7 +313,7 @@ export class ComponentInstance {
   }
 
   emit(eventname, ...data) {
-    const propName = `on${eventname.slice(0, 1).toUpperCase()}${eventname.slice(1).toLowerCase()}`;
+    const propName = `on${eventname.slice(0, 1).toUpperCase()}${eventname.slice(1)}`;
     const func = this.vnode.properties[propName];
 
     if (typeof func !== 'function') {
