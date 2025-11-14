@@ -104,8 +104,6 @@ function getTransitionInfo(el) {
 
   const timeout = Math.max(animTimeout, tranTimeout);
 
-  console.log({tranDelay, tranDuration})
-
   return {
     timeout,
     animationCount: animTimeout > 0 ? animationCount : 0,
