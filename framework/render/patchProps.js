@@ -194,7 +194,7 @@ export function patchCompRef(prevNode, nextNode) {
   const nextRef = nextNode.properties.ref;
 
   if (prevNode && isRef(prevNode.properties.ref)) {
-    if (prevNode.properties.ref !== nextRef) return;
+    if (prevNode.properties.ref === nextRef) return;
 
     prevNode.properties.ref.value = null;
   }
