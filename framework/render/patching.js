@@ -305,7 +305,9 @@ export function patch(parentNode, nextChildren, namespace) {
     const diffData = isMount ? null : evalDiff(prevNode, nextNode);
 
     if (diffData && !diffData.isSame) {
-      if (diffData.prevKey) {
+      const sameKey = diffData.prevKey === diffData.nextKey;
+
+      if (diffData.prevKey && !sameKey) {
         // Stash Previous Node
         unmountList.set(diffData.prevKey, prevNode);
       } else if (prevNode) {
@@ -316,7 +318,7 @@ export function patch(parentNode, nextChildren, namespace) {
       parentNode.children[index] = null;
       prevNode = null;
 
-      if (diffData.nextKey) {
+      if (diffData.nextKey && !sameKey) {
         let matchedNode = unmountList.get(diffData.nextKey);
 
         if (matchedNode) {
