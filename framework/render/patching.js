@@ -323,10 +323,15 @@ export function patch(parentNode, nextChildren, namespace) {
 
         if (matchedNode) {
           unmountList.delete(diffData.nextKey);
-          prevNode = resolveMatchedChild(matchedNode, nextNode, diffData.nextType);
+          prevNode = resolveMatchedChild(
+            matchedNode,
+            nextNode,
+            diffData.nextType
+          );
         } else if (
           parentNode.keyMap &&
-          typeof (matchedNode = parentNode.keyMap.get(diffData.nextKey)) === 'number'
+          typeof (matchedNode = parentNode.keyMap.get(diffData.nextKey)) ===
+            'number'
         ) {
           prevNode = resolveMatchedChild(
             parentNode.children[matchedNode],
