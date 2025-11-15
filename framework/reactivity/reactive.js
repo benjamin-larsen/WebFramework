@@ -38,6 +38,9 @@ const reactiveHandler = {
     if (prop === REACTIVE_FLAGS.IS_REACTIVE) {
       return true;
     }
+    if (prop === REACTIVE_FLAGS.IS_REF || prop === REACTIVE_FLAGS.IS_READONLY) {
+      return false;
+    }
 
     if (prop === 'hasOwnProperty') return hasOwnProperty;
 
@@ -118,6 +121,9 @@ const shallowReactiveHandler = {
     if (prop === REACTIVE_FLAGS.IS_REACTIVE) {
       return true;
     }
+    if (prop === REACTIVE_FLAGS.IS_REF || prop === REACTIVE_FLAGS.IS_READONLY) {
+      return false;
+    }
 
     if (prop === 'hasOwnProperty') return hasOwnProperty;
 
@@ -149,6 +155,9 @@ const readonlyHandler = {
     if (prop === REACTIVE_FLAGS.UNWRAP) return target;
     if (prop === REACTIVE_FLAGS.IS_READONLY) {
       return true;
+    }
+    if (prop === REACTIVE_FLAGS.IS_REF || prop === REACTIVE_FLAGS.IS_REACTIVE) {
+      return false;
     }
 
     let arrMethod;
@@ -213,6 +222,9 @@ const shallowReadonlyHandler = {
     if (prop === REACTIVE_FLAGS.UNWRAP) return target;
     if (prop === REACTIVE_FLAGS.IS_READONLY) {
       return true;
+    }
+    if (prop === REACTIVE_FLAGS.IS_REF || prop === REACTIVE_FLAGS.IS_REACTIVE) {
+      return false;
     }
 
     let arrMethod;
