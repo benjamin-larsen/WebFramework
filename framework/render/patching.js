@@ -8,7 +8,7 @@ import {
   TextNode
 } from '../vnode.js';
 import { ComponentInstance } from '../component.js';
-import { shallowCompareObj } from '../helpers.js';
+import { shallowCompareObj, mockMap } from '../helpers.js';
 import {
   INSTANCE_STATES,
   NAMESPACES,
@@ -38,7 +38,7 @@ function patchFragment(parentNode, nextArray, prevNode, index, namespace) {
     nextNode.index = index;
 
     refreshComponentAnchor(nextNode);
-    mount(nextNode, nextArray, namespace);
+    patch(nextNode, nextArray, namespace);
 
     return nextNode;
   }
@@ -95,7 +95,7 @@ function patchElement(parentNode, nextNode, prevNode, index, parentNamespace) {
     nextNode.el = el;
 
     patchElementDirectives(null, nextNode);
-    mount(nextNode, nextNode.children, namespace);
+    patch(nextNode, nextNode.children, namespace);
     patchProps(null, nextNode, namespace);
 
     parentNode.el.insertBefore(
@@ -233,72 +233,6 @@ export function evalDiff(prevNode, nextNode) {
   return { isSame, prevKey, nextKey, nextType };
 }
 
-function mount(parentNode, nextChildren, namespace) {
-  // Compute Key Map
-  const keyMap = new Map();
-
-  for (var index = 0; index < nextChildren.length; index++) {
-    const node = nextChildren[index];
-    if (node === null || typeof node !== 'object') continue;
-
-    if (
-      (node.constructor === ElementNode ||
-        node.constructor === ComponentNode) &&
-      node.properties.key !== undefined &&
-      node.properties.key !== null
-    ) {
-      if (keyMap.has(node.properties.key))
-        throw Error(`Duplicate key: ${node.properties.key}`);
-      keyMap.set(node.properties.key, index);
-    }
-  }
-
-  for (var index = 0; index < nextChildren.length; index++) {
-    const nextNode = nextChildren[index];
-
-    if (typeof nextNode === 'string') {
-      parentNode.children[index] = patchText(parentNode, nextNode, null, index);
-      continue;
-    }
-
-    if (Array.isArray(nextNode)) {
-      parentNode.children[index] = patchFragment(
-        parentNode,
-        nextNode,
-        null,
-        index,
-        namespace
-      );
-      continue;
-    }
-
-    // check if this is VNode rather than just object, copy on mount() as well, and check if any changes made to patch() was not made to mount()
-    if (nextNode === null || typeof nextNode !== 'object') {
-      parentNode.children[index] = null;
-      continue;
-    }
-
-    if (nextNode.constructor === ElementNode) {
-      parentNode.children[index] = patchElement(
-        parentNode,
-        nextNode,
-        null,
-        index,
-        namespace
-      );
-    } else if (nextNode.constructor === ComponentNode) {
-      parentNode.children[index] = patchComponent(
-        parentNode,
-        nextNode,
-        null,
-        index
-      );
-    }
-  }
-
-  parentNode.keyMap = keyMap;
-}
-
 function resolveMatchedChild(prevNode, nextNode, nextType) {
   const prevType = getNodeType(prevNode);
 
@@ -315,15 +249,11 @@ function resolveMatchedChild(prevNode, nextNode, nextType) {
   return prevNode;
 }
 
-export function patch(parentNode, nextChildren, namespace) {
-  if (parentNode.children.length === 0)
-    return mount(parentNode, nextChildren, namespace);
-  // Compute Key Map
-  const keyMap = new Map();
-  const unmountList = new Map();
+function computeKeys(children) {
+  let keyMap = null;
 
-  for (var index = 0; index < nextChildren.length; index++) {
-    const node = nextChildren[index];
+  for (var index = 0; index < children.length; index++) {
+    const node = children[index];
     if (node === null || typeof node !== 'object') continue;
 
     if (
@@ -332,19 +262,46 @@ export function patch(parentNode, nextChildren, namespace) {
       node.properties.key !== undefined &&
       node.properties.key !== null
     ) {
+      if (keyMap === null) keyMap = new Map();
+
       if (keyMap.has(node.properties.key))
         throw Error(`Duplicate key: ${node.properties.key}`);
       keyMap.set(node.properties.key, index);
     }
   }
 
+  return keyMap;
+}
+
+export function patch(parentNode, nextChildren, namespace) {
+  const isMount = parentNode.children.length === 0;
+
+  // Compute Key Map
+  const keyMap = computeKeys(nextChildren);
+
+  /*
+    Set unmountList to null, to save memory allocation.
+    Background: unmountList is a tempoary map to store unmatched previous keyed children.
+
+    If is Mounting, difference won't be evaluated, therefore unmountList is unnescary.
+    If previous Key Map is zero, this indicates there are no Keyed Children in previous, therefore unmountList is unnesscary.
+  */
+  const unmountList =
+    isMount || !parentNode.keyMap || parentNode.keyMap.size === 0
+      ? mockMap
+      : new Map();
+
+  if (parentNode.children.length < nextChildren.length) {
+    parentNode.children.length = nextChildren.length;
+  }
+
   for (var index = 0; index < nextChildren.length; index++) {
     const nextNode = nextChildren[index];
-    let prevNode = parentNode.children[index];
+    let prevNode = isMount ? null : parentNode.children[index];
 
-    const diffData = evalDiff(prevNode, nextNode);
+    const diffData = isMount ? null : evalDiff(prevNode, nextNode);
 
-    if (!diffData.isSame) {
+    if (diffData && !diffData.isSame) {
       if (diffData.prevKey) {
         // Stash Previous Node
         unmountList.set(diffData.prevKey, prevNode);
@@ -357,20 +314,21 @@ export function patch(parentNode, nextChildren, namespace) {
       prevNode = null;
 
       if (diffData.nextKey) {
-        const result =
-          unmountList.get(diffData.nextKey) ||
-          parentNode.keyMap.get(diffData.nextKey);
+        let matchedNode = unmountList.get(diffData.nextKey);
 
-        if (typeof result === 'number') {
+        if (matchedNode) {
+          unmountList.delete(diffData.nextKey);
+          prevNode = resolveMatchedChild(matchedNode, nextNode, diffData.nextType);
+        } else if (
+          parentNode.keyMap &&
+          typeof (matchedNode = parentNode.keyMap.get(diffData.nextKey)) === 'number'
+        ) {
           prevNode = resolveMatchedChild(
-            parentNode.children[result],
+            parentNode.children[matchedNode],
             nextNode,
             diffData.nextType
           );
-          parentNode.children[result] = null;
-        } else if (typeof result === 'object') {
-          unmountList.delete(diffData.nextKey);
-          prevNode = resolveMatchedChild(result, nextNode, diffData.nextType);
+          parentNode.children[matchedNode] = null;
         }
 
         if (prevNode) {
@@ -429,6 +387,8 @@ export function patch(parentNode, nextChildren, namespace) {
   }
 
   parentNode.keyMap = keyMap;
+
+  if (isMount) return;
 
   // index should inheritely be set to nextChildren.length according to the previous loop
   for (

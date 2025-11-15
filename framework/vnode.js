@@ -12,7 +12,7 @@ export class RootContainer {
     this.component = component;
     this.properties = props;
     this.children = [];
-    this.keyMap = new Map();
+    this.keyMap = null;
 
     this.el = el;
 
@@ -43,7 +43,7 @@ export function body(component, props) {
 export class FragmentNode {
   constructor() {
     this.children = [];
-    this.keyMap = new Map();
+    this.keyMap = null;
 
     this.index = null;
     this.parent = null;
@@ -78,7 +78,7 @@ export class ElementNode {
     this.tag = tag;
     this.properties = properties || EMPTY_PROPS;
     this.children = children;
-    this.keyMap = new Map();
+    this.keyMap = null;
 
     this.el = null;
   }
@@ -184,7 +184,7 @@ export class ComponentNode {
     }
 
     this.children = [];
-    this.keyMap = new Map();
+    this.keyMap = null;
     this.parent = null;
 
     this.index = null;

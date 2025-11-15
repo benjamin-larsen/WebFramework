@@ -61,3 +61,29 @@ export function isIntegerKey(key) {
     '' + parseInt(key, 10) === key
   );
 }
+
+const emptyIterator = {
+  next() {
+    return { done: true };
+  }
+};
+
+export const mockMap = {
+  get() {
+    return undefined;
+  },
+
+  set() {
+    return undefined;
+  },
+
+  delete() {
+    return undefined;
+  },
+
+  [Symbol.iterator]() {
+    return emptyIterator;
+  }
+};
+
+window.mockMap = mockMap;

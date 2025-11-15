@@ -1,7 +1,7 @@
 import { isRef } from './ref.js';
 import { toRaw } from './reactive.js';
 import { EFFECT_STATES, ITERATE_KEY, TRIGGER_TYPES } from '../constants.js';
-import { handleAsyncError, isIntegerKey } from '../helpers.js';
+import { handleAsyncError, isIntegerKey, mockMap } from '../helpers.js';
 
 const targetMap = new Map();
 let activeEffect = null;
@@ -116,13 +116,6 @@ export class Dependency {
     }
   }
 }
-
-// Incase a destroyed Effect would be used, don't cause a failure.
-const mockMap = {
-  set() {
-    return undefined;
-  }
-};
 
 export class Effect {
   constructor(func) {
