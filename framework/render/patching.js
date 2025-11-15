@@ -157,6 +157,8 @@ function patchComponent(parentNode, nextNode, prevNode, index) {
   ) {
     nextNode.el = prevNode.el;
     nextNode.children = prevNode.children;
+    nextNode.keyMap = prevNode.keyMap;
+    nextNode.anchor = prevNode.anchor;
     nextNode.index = index;
     nextNode.parent = parentNode;
 
@@ -167,6 +169,7 @@ function patchComponent(parentNode, nextNode, prevNode, index) {
     // Set children as it's used for patching in rendering
     if (prevNode) {
       nextNode.children = prevNode.children;
+      nextNode.keyMap = prevNode.keyMap;
     }
 
     nextNode.index = index;
