@@ -44,7 +44,7 @@ export function syncComponentDef(oldDef, def) {
   for (const key in oldDef) {
     if (key === SYNCED_KEY) continue;
     if (key === '_hmrid') continue;
-    if (key === '_onlyRender') continue;
+    if (key === '_astHash') continue;
     if (key in def) continue;
 
     delete oldDef[key];
@@ -87,7 +87,7 @@ function hotUpdate(hmrId, newComponent) {
   for (const instance of instanceSet) {
     if (!instance.vnode) continue;
 
-    if (newComponent._onlyRender) {
+    if (newComponent._astHash === instance.vnode.component._astHash) {
       rerender(instance, newComponent);
     } else {
       fullReload(instance, newComponent);
