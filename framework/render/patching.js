@@ -303,7 +303,7 @@ export function patch(parentNode, nextChildren, namespace) {
     If is Mounting, difference won't be evaluated, therefore unmountList is unnescary.
     If previous Key Map is zero, this indicates there are no Keyed Children in previous, therefore unmountList is unnesscary.
   */
-  const unmountList =
+  const detachedNodes =
     isMount || !parentNode.keyMap || parentNode.keyMap.size === 0
       ? mockMap
       : new Map();
@@ -322,8 +322,8 @@ export function patch(parentNode, nextChildren, namespace) {
       const sameKey = diffData.prevKey === diffData.nextKey;
 
       if (diffData.prevKey && !sameKey) {
-        // Stash Previous Node
-        unmountList.set(diffData.prevKey, prevNode);
+        // Detach Previous Node
+        detachedNodes.set(diffData.prevKey, prevNode);
       } else if (prevNode) {
         prevNode.unmount(false, true);
       }
@@ -333,11 +333,12 @@ export function patch(parentNode, nextChildren, namespace) {
       prevNode = null;
 
       if (diffData.nextKey && !sameKey) {
-        let matchedNode = unmountList.get(diffData.nextKey);
+        let matchedNode = detachedNodes.get(diffData.nextKey);
         let shouldMove = false;
 
         if (matchedNode) {
-          unmountList.delete(diffData.nextKey);
+          // Re-attach Node
+          detachedNodes.delete(diffData.nextKey);
           prevNode = resolveMatchedChild(
             matchedNode,
             nextNode,
@@ -430,7 +431,8 @@ export function patch(parentNode, nextChildren, namespace) {
     if (item) item.unmount(false, true);
   }
 
-  for (const [_, orphan] of unmountList) {
+  // Clean up Detached Nodes
+  for (const [_, orphan] of detachedNodes) {
     orphan.unmount(false, true);
   }
 
