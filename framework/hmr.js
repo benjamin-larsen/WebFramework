@@ -44,6 +44,7 @@ export function syncComponentDef(oldDef, def) {
   for (const key in oldDef) {
     if (key === SYNCED_KEY) continue;
     if (key === '_hmrid') continue;
+    if (key === '_onlyRender') continue;
     if (key in def) continue;
 
     delete oldDef[key];
@@ -79,14 +80,14 @@ function rerender(instance, newComponent) {
   instance.update();
 }
 
-function hotUpdate(hmrId, newComponent, onlyRender = false) {
+function hotUpdate(hmrId, newComponent) {
   const instanceSet = instanceMap.get(hmrId);
   if (!instanceSet) return;
 
   for (const instance of instanceSet) {
     if (!instance.vnode) continue;
 
-    if (onlyRender) {
+    if (newComponent._onlyRender) {
       rerender(instance, newComponent);
     } else {
       fullReload(instance, newComponent);
