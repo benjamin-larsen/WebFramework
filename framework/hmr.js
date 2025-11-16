@@ -43,6 +43,7 @@ export function syncComponentDef(oldDef, def) {
 
   for (const key in oldDef) {
     if (key === SYNCED_KEY) continue;
+    if (key === '_hmrid') continue;
     if (key in def) continue;
 
     delete oldDef[key];
@@ -66,10 +67,7 @@ function fullReload(instance, newComponent) {
   instance.status = INSTANCE_STATES.BEFORE_MOUNT;
 
   // Setup new
-  syncComponentDef(
-    instance.vnode.component,
-    newComponent
-  );
+  syncComponentDef(instance.vnode.component, newComponent);
 
   instance.callHook('onCreated', shallowReadonly(instance.vnode.properties));
   instance.update();
@@ -77,10 +75,7 @@ function fullReload(instance, newComponent) {
 
 function rerender(instance, newComponent) {
   instance.functionCache = [];
-  syncComponentDef(
-    instance.vnode.component,
-    newComponent
-  );
+  syncComponentDef(instance.vnode.component, newComponent);
   instance.update();
 }
 
