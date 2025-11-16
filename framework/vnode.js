@@ -3,6 +3,7 @@ import { REACTIVE_FLAGS, EMPTY_PROPS } from './constants.js';
 import standardComponents from './standardComponents/index.js';
 import { isRef } from './reactivity/ref.js';
 import { destroyDirective } from './render/directives.js';
+import { syncComponentDef } from './hmr.js';
 
 export class RootContainer {
   constructor(component, el, props) {
@@ -167,7 +168,7 @@ export class ComponentNode {
       );
 
       if (mappedComponent) {
-        this.component = mappedComponent;
+        syncComponentDef(this.component, mappedComponent);
       }
     }
 

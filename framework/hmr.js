@@ -33,6 +33,24 @@ export function removeHMRComponent(instance) {
   instanceSet.delete(instance);
 }
 
+const SYNCED_KEY = Symbol('hmr_synced');
+
+export function syncComponentDef(oldDef, def) {
+  if (oldDef === def) return;
+  if (oldDef[SYNCED_KEY] === def) return;
+
+  Object.assign(oldDef, def);
+
+  for (const key in oldDef) {
+    if (key === SYNCED_KEY) continue;
+    if (key in def) continue;
+
+    delete oldDef[key];
+  }
+
+  oldDef[SYNCED_KEY] = def;
+}
+
 function fullReload(instance, newComponent) {
   // Cleanup old
   instance.callHook('onDestroy');
@@ -48,7 +66,10 @@ function fullReload(instance, newComponent) {
   instance.status = INSTANCE_STATES.BEFORE_MOUNT;
 
   // Setup new
-  instance.vnode.component = newComponent;
+  syncComponentDef(
+    instance.vnode.component,
+    newComponent
+  );
 
   instance.callHook('onCreated', shallowReadonly(instance.vnode.properties));
   instance.update();
@@ -56,40 +77,24 @@ function fullReload(instance, newComponent) {
 
 function rerender(instance, newComponent) {
   instance.functionCache = [];
-  instance.vnode.component = newComponent;
+  syncComponentDef(
+    instance.vnode.component,
+    newComponent
+  );
   instance.update();
 }
 
-function shouldFullReload(instance, newComponent, hook) {
-  const hasPrev = typeof instance.vnode.component[hook] === 'function';
-  const hasNext = typeof newComponent[hook] === 'function';
-
-  if (hasPrev && !hasNext) return true;
-  if (!hasPrev && hasNext) return true;
-  if (!hasPrev && !hasNext) return false;
-
-  if (
-    instance.vnode.component[hook].toString() !== newComponent[hook].toString()
-  )
-    return true;
-
-  return false;
-}
-
-function hotUpdate(hmrId, newComponent) {
+function hotUpdate(hmrId, newComponent, onlyRender = false) {
   const instanceSet = instanceMap.get(hmrId);
   if (!instanceSet) return;
 
   for (const instance of instanceSet) {
     if (!instance.vnode) continue;
 
-    if (
-      shouldFullReload(instance, newComponent, 'onCreated') ||
-      shouldFullReload(instance, newComponent, 'onMounted')
-    ) {
-      fullReload(instance, newComponent);
-    } else {
+    if (onlyRender) {
       rerender(instance, newComponent);
+    } else {
+      fullReload(instance, newComponent);
     }
   }
 }
