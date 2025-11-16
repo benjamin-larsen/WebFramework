@@ -274,6 +274,8 @@ export class ComponentInstance {
     this.data = {};
     this.watchers = [];
 
+    this.functionCache = [];
+
     this.effect = new Effect(() => {
       const componentNode = this.vnode;
       if (!componentNode) return undefined;
@@ -284,7 +286,8 @@ export class ComponentInstance {
         this.public,
         this.public,
         shallowReadonly(componentNode.properties),
-        componentNode.slots || EMPTY_PROPS
+        componentNode.slots || EMPTY_PROPS,
+        this.functionCache
       );
     });
 

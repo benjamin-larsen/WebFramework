@@ -37,6 +37,7 @@ function fullReload(instance, newComponent) {
   // Cleanup old
   instance.callHook('onDestroy');
   instance.data = {};
+  instance.functionCache = [];
 
   for (const watcher of instance.watchers) {
     watcher.destroy();
@@ -54,6 +55,7 @@ function fullReload(instance, newComponent) {
 }
 
 function rerender(instance, newComponent) {
+  instance.functionCache = [];
   instance.vnode.component = newComponent;
   instance.update();
 }
