@@ -276,6 +276,20 @@ function computeKeys(children) {
   return keyMap;
 }
 
+// Optimize, perhaps by saving some sort of boundary
+function assertShouldMove(index, matchedIndex, children) {
+  if (index >= matchedIndex) return true; // This shouldn't happen, but just incase.
+
+  for (var i = index + 1; i < matchedIndex; i++) {
+    const node = children[i];
+    if (node === null) continue;
+
+    return true;
+  }
+
+  return false;
+}
+
 export function patch(parentNode, nextChildren, namespace) {
   const isMount = parentNode.children.length === 0;
 
@@ -320,6 +334,7 @@ export function patch(parentNode, nextChildren, namespace) {
 
       if (diffData.nextKey && !sameKey) {
         let matchedNode = unmountList.get(diffData.nextKey);
+        let shouldMove = false;
 
         if (matchedNode) {
           unmountList.delete(diffData.nextKey);
@@ -328,6 +343,8 @@ export function patch(parentNode, nextChildren, namespace) {
             nextNode,
             diffData.nextType
           );
+
+          shouldMove = true;
         } else if (
           parentNode.keyMap &&
           typeof (matchedNode = parentNode.keyMap.get(diffData.nextKey)) ===
@@ -339,9 +356,11 @@ export function patch(parentNode, nextChildren, namespace) {
             diffData.nextType
           );
           parentNode.children[matchedNode] = null;
+
+          shouldMove = assertShouldMove(index, matchedNode, parentNode.children);
         }
 
-        if (prevNode) {
+        if (prevNode && shouldMove) {
           prevNode.move(
             parentNode,
             findAnchor(parentNode.children, index) || parentNode.anchor || null
