@@ -192,6 +192,7 @@ export default {
 
         const enter = (e, isCancel = false) => {
           if (typeof e === 'object') {
+            if (e.target !== el) return;
             if (e.type === 'transitionend') {
               transitionCount--;
 
@@ -274,6 +275,7 @@ export default {
 
         const leave = (e, isCancel = false) => {
           if (typeof e === 'object') {
+            if (e.target !== el) return;
             if (e.type === 'transitionend') {
               transitionCount--;
 
