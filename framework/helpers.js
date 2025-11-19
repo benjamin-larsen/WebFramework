@@ -85,5 +85,3 @@ export const mockMap = {
     return emptyIterator;
   }
 };
-
-window.mockMap = mockMap;
