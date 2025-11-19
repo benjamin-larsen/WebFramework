@@ -75,6 +75,14 @@ function patchElement(parentNode, nextNode, prevNode, index, parentNamespace) {
     prevNode.eventInvokers = nextNode.eventInvokers;
     prevNode.dirs = nextNode.dirs;
 
+    // <Transition>
+
+    if (prevNode.transition || nextNode.transition) {
+      prevNode.transition = nextNode.transition;
+    }
+
+    // </Transition>
+
     finishElementDirectives(prevNode, nextNode);
 
     if (nextNode.el[TRANSITION_CLASS]) {
@@ -85,9 +93,22 @@ function patchElement(parentNode, nextNode, prevNode, index, parentNamespace) {
 
     return prevNode;
   } else {
+    // <Transition>
+
+    let isTransition =
+      nextNode.transition && !prevNode
+        ? nextNode.transition.startOperation(nextNode)
+        : false;
+
     if (nextNode.transition) {
-      nextNode.transition.beforeEnter(nextNode);
+      nextNode.transition.beforeEnter();
     }
+
+    if (isTransition) {
+      nextNode.transition.endOperation();
+    }
+
+    // </Transition>
 
     const { namespace, tag } = resolveElementTag(nextNode.tag, parentNamespace);
 
@@ -183,7 +204,20 @@ function patchComponent(parentNode, nextNode, prevNode, index) {
       );
     }
 
+    // <Transition>
+
+    let isTransition =
+      nextNode.transition && !prevNode
+        ? nextNode.transition.startOperation(nextNode)
+        : false;
     renderNode(nextNode, true);
+
+    if (isTransition) {
+      nextNode.transition.endOperation();
+    }
+
+    // </Transition>
+
     patchCompRef(prevNode, nextNode);
 
     return nextNode;
@@ -358,7 +392,11 @@ export function patch(parentNode, nextChildren, namespace) {
           );
           parentNode.children[matchedNode] = null;
 
-          shouldMove = assertShouldMove(index, matchedNode, parentNode.children);
+          shouldMove = assertShouldMove(
+            index,
+            matchedNode,
+            parentNode.children
+          );
         }
 
         if (prevNode && shouldMove) {

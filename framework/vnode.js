@@ -86,8 +86,11 @@ export class ElementNode {
 
   unmount(DOMHandled = false, isRoot = false) {
     // if not isRoot it means a parent Element was unmounted.
+
     if (this.transition && isRoot) {
+      this.transition.startOperation(this);
       this.transition.onLeave(this.el, this);
+      this.transition.endOperation();
       return;
     }
 
@@ -197,11 +200,18 @@ export class ComponentNode {
   unmount(DOMHandled = false, isRoot = false) {
     this.instance.callHook('beforeDestroy');
 
+    let isTransition =
+      this.transition && isRoot ? this.transition.startOperation(this) : false;
+
     this.anchor = null;
 
     for (const child of this.children) {
       if (!child) continue;
       child.unmount(DOMHandled, this.transition && isRoot);
+    }
+
+    if (isTransition) {
+      this.transition.endOperation();
     }
 
     // Prevent Memory Leak

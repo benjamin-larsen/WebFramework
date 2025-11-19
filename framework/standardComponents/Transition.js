@@ -137,19 +137,17 @@ export default {
   onCreated(ctx, props) {
     ctx.hasMounted = props.appear ? true : false;
 
-    // Need entire VNode for comparison
+    let currentNode = null;
+
+    // Root Child (used to determine wether to crossfade or remove)
     let leavingNode = null;
 
-    // Only need Element to get callback
     let enteringEl = null;
+    let leavingEl = null;
 
     function cancelCurrentLeave() {
-      if (
-        leavingNode &&
-        leavingNode.el &&
-        leavingNode.el[TRANSITION_LEAVE_CALLBACK]
-      ) {
-        leavingNode.el[TRANSITION_LEAVE_CALLBACK](undefined, true);
+      if (leavingEl && leavingEl[TRANSITION_LEAVE_CALLBACK]) {
+        leavingEl[TRANSITION_LEAVE_CALLBACK](undefined, true);
       }
     }
 
@@ -165,8 +163,21 @@ export default {
     };
 
     ctx.hooks = {
-      beforeEnter(vnode) {
-        if (!evalDiff(leavingNode, vnode).isSame) return;
+      startOperation(node) {
+        if (currentNode) return false;
+
+        currentNode = node;
+
+        return true;
+      },
+
+      endOperation() {
+        currentNode = null;
+      },
+
+      beforeEnter() {
+        console.log({ leavingNode, currentNode });
+        if (!evalDiff(leavingNode, currentNode).isSame) return;
         cancelCurrentLeave();
       },
 
@@ -298,6 +309,7 @@ export default {
 
           if (!el._isLeaving) return;
 
+          leavingEl = null;
           leavingNode = null;
           el._isLeaving = false;
           el[TRANSITION_LEAVE_CALLBACK] = undefined;
@@ -308,7 +320,8 @@ export default {
           }
         };
 
-        leavingNode = vnode;
+        leavingEl = el;
+        leavingNode = currentNode;
         el[TRANSITION_LEAVE_CALLBACK] = leave;
 
         if (transitionCount > 0) {
@@ -332,6 +345,10 @@ export default {
           });
         }
       }
+    };
+
+    window.currentNode = function () {
+      return currentNode;
     };
   },
 
