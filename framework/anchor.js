@@ -1,10 +1,18 @@
 import { ComponentNode, FragmentNode } from './vnode.js';
+import { TeleportNode } from './Teleport.js';
 
 export function findAnchor(oldRender, index) {
   for (var i = index + 1; i < oldRender.length; i++) {
     const item = oldRender[i];
     if (!item) continue;
 
+    if (item.constructor === TeleportNode) {
+      // Ignore enabled Teleports, as they have their own DOM structure.
+      if (!item.properties.disabled) continue;
+
+      const anchor = findAnchor(item.children, -1);
+      if (anchor) return anchor;
+    }
     if (
       item.constructor === ComponentNode ||
       item.constructor === FragmentNode
@@ -27,7 +35,15 @@ function findComponentAnchor(initComponent) {
     if (
       !component ||
       (component.constructor !== ComponentNode &&
-        component.constructor !== FragmentNode)
+        component.constructor !== FragmentNode &&
+        component.constructor !== TeleportNode)
+    )
+      return null;
+
+    // Ignore enabled Teleports, as the Teleport would be the anchor.
+    if (
+      component.constructor === TeleportNode &&
+      !component.properties.disabled
     )
       return null;
 
@@ -42,6 +58,15 @@ function findComponentAnchor(initComponent) {
 }
 
 export function refreshComponentAnchor(component) {
+  // Ignore enabled Teleports, as the Teleport would be the anchor.
+  if (
+    component.constructor === TeleportNode &&
+    !component.properties.disabled
+  ) {
+    component.anchor = null;
+    return;
+  }
+
   const anchor = findAnchor(component.parent.children, component.index);
 
   if (anchor) {

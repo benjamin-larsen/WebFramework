@@ -7,6 +7,7 @@ import {
   FragmentNode,
   TextNode
 } from '../vnode.js';
+import { TeleportNode } from '../Teleport.js';
 import { ComponentInstance } from '../component.js';
 import { shallowCompareObj, mockMap } from '../helpers.js';
 import {
@@ -38,7 +39,7 @@ function patchFragment(parentNode, nextArray, prevNode, index, namespace) {
     nextNode.index = index;
 
     refreshComponentAnchor(nextNode);
-    patch(nextNode, nextArray, namespace);
+    patch(nextNode, nextArray, namespace, true);
 
     return nextNode;
   }
@@ -116,7 +117,7 @@ function patchElement(parentNode, nextNode, prevNode, index, parentNamespace) {
     nextNode.el = el;
 
     patchElementDirectives(null, nextNode);
-    patch(nextNode, nextNode.children, namespace);
+    patch(nextNode, nextNode.children, namespace, true);
     patchProps(null, nextNode, namespace);
 
     parentNode.el.insertBefore(
@@ -224,6 +225,103 @@ function patchComponent(parentNode, nextNode, prevNode, index) {
   }
 }
 
+function patchTeleport(parentNode, nextNode, prevNode, index) {
+  if (prevNode && prevNode.el) {
+    const to = nextNode.properties.to;
+    let isDisabled = !!nextNode.properties.disabled;
+
+    let nextEl = parentNode.el;
+
+    if (!isDisabled) {
+      let matchedEl;
+
+      if (typeof to === 'object' && to instanceof HTMLElement) {
+        matchedEl = to;
+      } else if (typeof to === 'string') {
+        matchedEl = document.querySelector(to);
+
+        if (!matchedEl)
+          console.warn("<Teleport> couldn't find target element.");
+      } else {
+        console.warn('<Teleport> must be provided with option "to".');
+      }
+
+      if (matchedEl) {
+        nextEl = matchedEl;
+      } else {
+        isDisabled = true;
+        nextNode.properties = { ...nextNode.properties, disabled: true };
+      }
+    }
+
+    if (nextEl !== prevNode.el) {
+      // namespace may change
+      if (nextEl.namespaceURI !== prevNode.el.namespaceURI) {
+        // Namespace Altered: Needs remount
+        for (const child of prevNode.children) {
+          if (!child) continue;
+          child.unmount(false, true);
+        }
+
+        prevNode.children.length = 0;
+      } else {
+        prevNode.move(
+          nextEl,
+          isDisabled
+            ? findAnchor(parentNode.children, index) ||
+                parentNode.anchor ||
+                null
+            : null,
+          true
+        );
+      }
+    }
+
+    prevNode.el = nextEl;
+
+    const nextChildren = nextNode.children;
+
+    prevNode.properties = nextNode.properties;
+
+    refreshComponentAnchor(prevNode);
+    patch(prevNode, nextChildren, prevNode.el.namespaceURI);
+
+    return prevNode;
+  } else {
+    const to = nextNode.properties.to;
+    let isDisabled = !!nextNode.properties.disabled;
+    nextNode.el = parentNode.el;
+    nextNode.parent = parentNode;
+    nextNode.index = index;
+
+    if (!isDisabled) {
+      let matchedEl;
+
+      if (typeof to === 'object' && to instanceof HTMLElement) {
+        matchedEl = to;
+      } else if (typeof to === 'string') {
+        matchedEl = document.querySelector(to);
+
+        if (!matchedEl)
+          console.warn("<Teleport> couldn't find target element.");
+      } else {
+        console.warn('<Teleport> must be provided with option "to".');
+      }
+
+      if (matchedEl) {
+        nextNode.el = matchedEl;
+      } else {
+        nextNode.properties = { ...nextNode.properties, disabled: true };
+      }
+    }
+
+    refreshComponentAnchor(nextNode);
+    patch(nextNode, nextNode.children, nextNode.el.namespaceURI, true);
+
+    return nextNode;
+  }
+}
+
 function getNodeType(node) {
   if (node === null) return null;
   if (typeof node === 'string') return TextNode;
@@ -242,7 +340,9 @@ export function evalDiff(prevNode, nextNode) {
   let nextKey = null;
 
   if (
-    (prevType === ComponentNode || prevType === ElementNode) &&
+    (prevType === ComponentNode ||
+      prevType === ElementNode ||
+      prevType === TeleportNode) &&
     prevNode.properties.key !== undefined &&
     prevNode.properties.key !== null
   ) {
@@ -250,7 +350,9 @@ export function evalDiff(prevNode, nextNode) {
   }
 
   if (
-    (nextType === ComponentNode || nextType === ElementNode) &&
+    (nextType === ComponentNode ||
+      nextType === ElementNode ||
+      nextType === TeleportNode) &&
     nextNode.properties.key !== undefined &&
     nextNode.properties.key !== null
   ) {
@@ -295,7 +397,8 @@ function computeKeys(children) {
 
     if (
       (node.constructor === ElementNode ||
-        node.constructor === ComponentNode) &&
+        node.constructor === ComponentNode ||
+        node.constructor === TeleportNode) &&
       node.properties.key !== undefined &&
       node.properties.key !== null
     ) {
@@ -324,8 +427,8 @@ function assertShouldMove(index, matchedIndex, children) {
   return false;
 }
 
-export function patch(parentNode, nextChildren, namespace) {
-  const isMount = parentNode.children.length === 0;
+export function patch(parentNode, nextChildren, namespace, overrideMount) {
+  const isMount = overrideMount || parentNode.children.length === 0;
 
   // Compute Key Map
   const keyMap = computeKeys(nextChildren);
@@ -401,7 +504,7 @@ export function patch(parentNode, nextChildren, namespace) {
 
         if (prevNode && shouldMove) {
           prevNode.move(
-            parentNode,
+            parentNode.el,
             findAnchor(parentNode.children, index) || parentNode.anchor || null
           );
         }
@@ -446,6 +549,13 @@ export function patch(parentNode, nextChildren, namespace) {
       );
     } else if (nextNode.constructor === ComponentNode) {
       parentNode.children[index] = patchComponent(
+        parentNode,
+        nextNode,
+        prevNode,
+        index
+      );
+    } else if (nextNode.constructor === TeleportNode) {
+      parentNode.children[index] = patchTeleport(
         parentNode,
         nextNode,
         prevNode,

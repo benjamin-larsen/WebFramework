@@ -65,11 +65,11 @@ export class FragmentNode {
     this.children = null;
   }
 
-  move(parentNode, anchor) {
+  move(parentEl, anchor) {
     for (const child of this.children) {
       if (!child) continue;
 
-      child.move(parentNode, anchor);
+      child.move(parentEl, anchor);
     }
   }
 }
@@ -117,8 +117,8 @@ export class ElementNode {
     this.children = null;
   }
 
-  move(parentNode, anchor) {
-    parentNode.el.insertBefore(this.el, anchor);
+  move(parentEl, anchor) {
+    parentEl.insertBefore(this.el, anchor);
   }
 }
 
@@ -146,8 +146,8 @@ export class TextNode {
     this.el = null;
   }
 
-  move(parentNode, anchor) {
-    parentNode.el.insertBefore(this.el, anchor);
+  move(parentEl, anchor) {
+    parentEl.insertBefore(this.el, anchor);
   }
 }
 
@@ -225,10 +225,10 @@ export class ComponentNode {
     this.instance = null;
   }
 
-  move(parentNode, anchor) {
+  move(parentEl, anchor) {
     for (const child of this.children) {
       if (!child) continue;
-      child.move(parentNode, anchor);
+      child.move(parentEl, anchor);
     }
   }
 }
@@ -291,10 +291,3 @@ export function withDirectives(vnode, dirs) {
 
   return vnode;
 }
-
-export const containerNodes = [
-  RootContainer,
-  FragmentNode,
-  ElementNode,
-  ComponentNode
-];

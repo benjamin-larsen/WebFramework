@@ -51,12 +51,16 @@ import {
   TextNode,
   FragmentNode
 } from './vnode.js';
+import { TeleportNode } from './Teleport.js';
+export { createTeleport } from './Teleport.js';
 
 function printVNode(node, indent = '') {
   if (node instanceof RootContainer) {
     console.log(`${indent}<Root`, node.el, '>');
   } else if (node instanceof ElementNode) {
     console.log(`${indent}<${node.tag}>`);
+  } else if (node instanceof TeleportNode) {
+    console.log(`${indent}<Teleport>`);
   } else if (node instanceof ComponentNode) {
     console.log(`${indent}<Component`, node.component, '>');
   } else if (node instanceof TextNode) {
@@ -77,6 +81,8 @@ function printVNode(node, indent = '') {
     console.log(`${indent}</Root>`);
   } else if (node instanceof ElementNode) {
     console.log(`${indent}</${node.tag}>`);
+  } else if (node instanceof TeleportNode) {
+    console.log(`${indent}</Teleport>`);
   } else if (node instanceof FragmentNode) {
     console.log(`${indent}</Fragment>`);
   } else if (node instanceof ComponentNode) {

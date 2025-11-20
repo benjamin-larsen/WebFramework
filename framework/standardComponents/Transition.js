@@ -4,6 +4,7 @@ import {
   TRANSITION_LEAVE_CALLBACK
 } from '../constants.js';
 import { ComponentNode, ElementNode } from '../vnode.js';
+import { TeleportNode } from '../Teleport.js';
 import { evalDiff } from '../render/patching.js';
 
 function getInnerChild(child) {
@@ -124,7 +125,8 @@ export function setNodeTransition(children, transition) {
     children.length > 1 ||
     typeof rootChild !== 'object' ||
     (rootChild.constructor !== ElementNode &&
-      rootChild.constructor !== ComponentNode)
+      rootChild.constructor !== ComponentNode &&
+      rootChild.constructor !== TeleportNode)
   ) {
     console.warn('<transition> expects a single Component or Element.');
   } else {
