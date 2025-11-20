@@ -2,7 +2,7 @@ import { ComponentNode } from '../vnode.js';
 import { refreshComponentAnchor } from '../anchor.js';
 import { patch } from './patching.js';
 import { INSTANCE_STATES } from '../constants.js';
-import { setCurrentInstance } from '../reactivity/effect.js';
+import { getCurrentInstance, setCurrentInstance } from '../reactivity/effect.js';
 import { shallowReadonly } from '../reactivity/reactive.js';
 import { setNodeTransition } from '../standardComponents/Transition.js';
 
@@ -82,7 +82,18 @@ class RenderQueue {
   }
 
   queuePost(job) {
-    this.postJobs.push(job);
+    const currentInstance = getCurrentInstance();
+
+    this.postJobs.push(() => {
+      const prevInstance = setCurrentInstance(currentInstance);
+
+      try {
+        job();
+      } catch(e) {
+        setCurrentInstance(prevInstance);
+        throw e;
+      }
+    });
   }
 
   queueDirective(dir) {
