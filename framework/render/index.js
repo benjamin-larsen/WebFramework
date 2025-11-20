@@ -19,6 +19,7 @@ class RenderQueue {
     this.renderId = null;
 
     this.currentPromise = null;
+    this.postJobs = [];
   }
 
   setPromise() {
@@ -56,6 +57,19 @@ class RenderQueue {
       dir.effect.run();
     }
 
+    while (this.postJobs.length > 0) {
+      const postJobs = [...this.postJobs];
+      this.postJobs.length = 0;
+
+      for (const job of postJobs) {
+        try {
+          job();
+        } catch (e) {
+          console.log('Error occured while running Post-Render Job.', e);
+        }
+      }
+    }
+
     if (promise) {
       promise.resolve();
     }
@@ -65,6 +79,10 @@ class RenderQueue {
     } else {
       this.renderId = null;
     }
+  }
+
+  queuePost(job) {
+    this.postJobs.push(job);
   }
 
   queueDirective(dir) {

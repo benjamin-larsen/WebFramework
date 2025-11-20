@@ -1,4 +1,4 @@
-import { renderNode } from './index.js';
+import { renderNode, renderQueue } from './index.js';
 import { findAnchor, refreshComponentAnchor } from '../anchor.js';
 import { patchProps, patchCompRef } from './patchProps.js';
 import {
@@ -282,6 +282,8 @@ function patchTeleport(parentNode, nextNode, prevNode, index) {
     const nextChildren = nextNode.children;
 
     prevNode.properties = nextNode.properties;
+    prevNode.parent = parentNode;
+    prevNode.index = index;
 
     refreshComponentAnchor(prevNode);
     patch(prevNode, nextChildren, prevNode.el.namespaceURI);
@@ -431,7 +433,7 @@ export function patch(parentNode, nextChildren, namespace, overrideMount) {
   const isMount = overrideMount || parentNode.children.length === 0;
 
   // Compute Key Map
-  const keyMap = computeKeys(nextChildren);
+  const keyMap = !isMount && computeKeys(parentNode.children);
 
   /*
     Set unmountList to null, to save memory allocation.
@@ -441,9 +443,7 @@ export function patch(parentNode, nextChildren, namespace, overrideMount) {
     If previous Key Map is zero, this indicates there are no Keyed Children in previous, therefore unmountList is unnesscary.
   */
   const detachedNodes =
-    isMount || !parentNode.keyMap || parentNode.keyMap.size === 0
-      ? mockMap
-      : new Map();
+    isMount || !keyMap || keyMap.size === 0 ? mockMap : new Map();
 
   if (parentNode.children.length < nextChildren.length) {
     parentNode.children.length = nextChildren.length;
@@ -484,9 +484,8 @@ export function patch(parentNode, nextChildren, namespace, overrideMount) {
 
           shouldMove = true;
         } else if (
-          parentNode.keyMap &&
-          typeof (matchedNode = parentNode.keyMap.get(diffData.nextKey)) ===
-            'number'
+          keyMap &&
+          typeof (matchedNode = keyMap.get(diffData.nextKey)) === 'number'
         ) {
           prevNode = resolveMatchedChild(
             parentNode.children[matchedNode],
@@ -555,16 +554,30 @@ export function patch(parentNode, nextChildren, namespace, overrideMount) {
         index
       );
     } else if (nextNode.constructor === TeleportNode) {
-      parentNode.children[index] = patchTeleport(
-        parentNode,
-        nextNode,
-        prevNode,
-        index
-      );
+      if (nextNode.properties.defer) {
+        const nodeIndex = index;
+
+        parentNode.children[nodeIndex] =
+          prevNode && prevNode.el ? prevNode : null;
+
+        renderQueue.queuePost(() => {
+          parentNode.children[nodeIndex] = patchTeleport(
+            parentNode,
+            nextNode,
+            prevNode,
+            nodeIndex
+          );
+        });
+      } else {
+        parentNode.children[index] = patchTeleport(
+          parentNode,
+          nextNode,
+          prevNode,
+          index
+        );
+      }
     }
   }
-
-  parentNode.keyMap = keyMap;
 
   if (isMount) return;
 
