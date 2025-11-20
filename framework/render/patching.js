@@ -225,6 +225,18 @@ function patchComponent(parentNode, nextNode, prevNode, index) {
   }
 }
 
+function patchNodeElement(node, el) {
+  for (const child of node.children) {
+    if (typeof child !== "object") continue;
+    if (!child.el) continue;
+    if (child.constructor !== FragmentNode && child.constructor !== ComponentNode && child.constructor !== TeleportNode) continue;
+
+    child.el = el;
+
+    patchNodeElement(child, el);
+  }
+}
+
 function patchTeleport(parentNode, nextNode, prevNode, index) {
   if (prevNode && prevNode.el) {
     const to = nextNode.properties.to;
@@ -275,6 +287,8 @@ function patchTeleport(parentNode, nextNode, prevNode, index) {
           true
         );
       }
+
+      patchNodeElement(prevNode, nextEl);
     }
 
     prevNode.el = nextEl;
