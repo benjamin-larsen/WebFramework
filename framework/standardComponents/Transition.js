@@ -178,7 +178,6 @@ export default {
       },
 
       beforeEnter() {
-        console.log({ leavingNode, currentNode });
         if (!evalDiff(leavingNode, currentNode).isSame) return;
         cancelCurrentLeave();
       },
@@ -347,10 +346,6 @@ export default {
           });
         }
       }
-    };
-
-    window.currentNode = function () {
-      return currentNode;
     };
   },
 
