@@ -418,7 +418,7 @@ export class ComponentInstance {
     renderQueue.queue(this);
   }
 
-  destroy() {
+  beforeDestroy() {
     if (import.meta.hot) {
       removeHMRComponent(this);
     }
@@ -429,6 +429,9 @@ export class ComponentInstance {
 
     this.effect.destroy();
     this.effect = null;
+  }
+
+  destroy() {
     this.vnode = null;
   }
 }

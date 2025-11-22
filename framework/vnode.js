@@ -218,6 +218,8 @@ export class ComponentNode {
     this.parent = null;
     this.children = null;
 
+    this.instance.beforeDestroy();
+
     // Call unmount hook before instance is destroyed.
     this.instance.callHook('onDestroy');
 
