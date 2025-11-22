@@ -23,22 +23,31 @@ import {
   finishElementDirectives
 } from './directives.js';
 
-function patchFragment(parentNode, nextArray, prevNode, index, namespace) {
+function patchFragment(
+  parentNode,
+  nextArray,
+  prevNode,
+  index,
+  prevIndex,
+  namespace
+) {
   if (prevNode && prevNode.el) {
     prevNode.el = parentNode.el;
     prevNode.parent = parentNode;
-    prevNode.index = index;
+    prevNode.index = prevIndex;
 
     refreshComponentAnchor(prevNode);
+    prevNode.index = index;
     patch(prevNode, nextArray, namespace);
     return prevNode;
   } else {
     const nextNode = new FragmentNode();
     nextNode.el = parentNode.el;
     nextNode.parent = parentNode;
-    nextNode.index = index;
+    nextNode.index = prevIndex;
 
     refreshComponentAnchor(nextNode);
+    nextNode.index = index;
     patch(nextNode, nextArray, namespace, true);
 
     return nextNode;
@@ -60,7 +69,14 @@ function resolveElementTag(tag, namespace) {
   return { tag, namespace };
 }
 
-function patchElement(parentNode, nextNode, prevNode, index, parentNamespace) {
+function patchElement(
+  parentNode,
+  nextNode,
+  prevNode,
+  index,
+  prevIndex,
+  parentNamespace
+) {
   if (prevNode && prevNode.el && prevNode.tag === nextNode.tag) {
     const nextChildren = nextNode.children;
 
@@ -122,7 +138,7 @@ function patchElement(parentNode, nextNode, prevNode, index, parentNamespace) {
 
     parentNode.el.insertBefore(
       el,
-      findAnchor(parentNode.children, index) || parentNode.anchor || null
+      findAnchor(parentNode.children, prevIndex) || parentNode.anchor || null
     );
 
     finishElementDirectives(null, nextNode);
@@ -135,7 +151,7 @@ function patchElement(parentNode, nextNode, prevNode, index, parentNamespace) {
   }
 }
 
-function patchText(parentNode, nextText, prevNode, index) {
+function patchText(parentNode, nextText, prevNode, prevIndex) {
   if (prevNode && prevNode.el) {
     if (prevNode.text !== nextText) {
       prevNode.el.nodeValue = nextText;
@@ -150,14 +166,14 @@ function patchText(parentNode, nextText, prevNode, index) {
 
     parentNode.el.insertBefore(
       el,
-      findAnchor(parentNode.children, index) || parentNode.anchor || null
+      findAnchor(parentNode.children, prevIndex) || parentNode.anchor || null
     );
 
     return nextNode;
   }
 }
 
-function patchComponent(parentNode, nextNode, prevNode, index) {
+function patchComponent(parentNode, nextNode, prevNode, index, prevIndex) {
   if (prevNode && prevNode.instance) {
     nextNode.instance = prevNode.instance;
     nextNode.instance.vnode = nextNode;
@@ -194,7 +210,7 @@ function patchComponent(parentNode, nextNode, prevNode, index) {
       nextNode.keyMap = prevNode.keyMap;
     }
 
-    nextNode.index = index;
+    nextNode.index = prevIndex;
     nextNode.parent = parentNode;
     nextNode.el = parentNode.el;
 
@@ -212,6 +228,7 @@ function patchComponent(parentNode, nextNode, prevNode, index) {
         ? nextNode.transition.startOperation(nextNode)
         : false;
     renderNode(nextNode, true);
+    nextNode.index = index;
 
     if (isTransition) {
       nextNode.transition.endOperation();
@@ -242,7 +259,7 @@ function patchNodeElement(node, el) {
   }
 }
 
-function patchTeleport(parentNode, nextNode, prevNode, index) {
+function patchTeleport(parentNode, nextNode, prevNode, index, prevIndex) {
   if (prevNode && prevNode.el) {
     const to = nextNode.properties.to;
     let isDisabled = !!nextNode.properties.disabled;
@@ -302,9 +319,10 @@ function patchTeleport(parentNode, nextNode, prevNode, index) {
 
     prevNode.properties = nextNode.properties;
     prevNode.parent = parentNode;
-    prevNode.index = index;
+    prevNode.index = prevIndex;
 
     refreshComponentAnchor(prevNode);
+    prevNode.index = index;
     patch(prevNode, nextChildren, prevNode.el.namespaceURI);
 
     return prevNode;
@@ -313,7 +331,7 @@ function patchTeleport(parentNode, nextNode, prevNode, index) {
     let isDisabled = !!nextNode.properties.disabled;
     nextNode.el = parentNode.el;
     nextNode.parent = parentNode;
-    nextNode.index = index;
+    nextNode.index = prevIndex;
 
     if (!isDisabled) {
       let matchedEl;
@@ -337,6 +355,7 @@ function patchTeleport(parentNode, nextNode, prevNode, index) {
     }
 
     refreshComponentAnchor(nextNode);
+    prevNode.index = index;
     patch(nextNode, nextNode.children, nextNode.el.namespaceURI, true);
 
     return nextNode;
@@ -452,7 +471,7 @@ export function patch(parentNode, nextChildren, namespace, overrideMount) {
   const isMount = overrideMount || parentNode.children.length === 0;
 
   // Compute Key Map
-  const keyMap = !isMount && computeKeys(parentNode.children);
+  const keyMap = computeKeys(nextChildren);
 
   /*
     Set unmountList to null, to save memory allocation.
@@ -462,30 +481,59 @@ export function patch(parentNode, nextChildren, namespace, overrideMount) {
     If previous Key Map is zero, this indicates there are no Keyed Children in previous, therefore unmountList is unnesscary.
   */
   const detachedNodes =
-    isMount || !keyMap || keyMap.size === 0 ? mockMap : new Map();
+    isMount || !parentNode.keyMap || parentNode.keyMap.size === 0
+      ? mockMap
+      : new Map();
 
-  if (parentNode.children.length < nextChildren.length) {
+  /*if (parentNode.children.length < nextChildren.length) {
     parentNode.children.length = nextChildren.length;
-  }
+  }*/
 
-  for (var index = 0; index < nextChildren.length; index++) {
-    const nextNode = nextChildren[index];
-    let prevNode = isMount ? null : parentNode.children[index];
+  let prevIndex = 0;
+  let nextIndex = 0;
+
+  for (;;) {
+    const nextNode = nextChildren[nextIndex];
+    let prevNode = isMount ? null : parentNode.children[prevIndex];
+
+    if (
+      prevIndex >= parentNode.children.length &&
+      nextIndex >= nextChildren.length
+    )
+      break;
 
     const diffData = isMount ? null : evalDiff(prevNode, nextNode);
+    let shouldSkipDiff = false;
 
-    if (diffData && !diffData.isSame) {
+    if (
+      diffData &&
+      !diffData.isSame &&
+      diffData.nextKey &&
+      !parentNode.keyMap.has(diffData.nextKey)
+    ) {
+      prevIndex--;
+      shouldSkipDiff = true;
+      prevNode = null;
+    }
+
+    if (!shouldSkipDiff && diffData && !diffData.isSame) {
       const sameKey = diffData.prevKey === diffData.nextKey;
 
-      if (diffData.prevKey && !sameKey) {
+      if (diffData.prevKey && !sameKey && keyMap.has(diffData.prevKey)) {
         // Detach Previous Node
         detachedNodes.set(diffData.prevKey, prevNode);
       } else if (prevNode) {
         prevNode.unmount(false, true);
+        parentNode.children[prevIndex] = null;
+
+        if (!sameKey) {
+          prevIndex++;
+          continue;
+        }
       }
 
       // Prev Node was either moved or unmounted. Do not re-use.
-      parentNode.children[index] = null;
+      parentNode.children[prevIndex] = null;
       prevNode = null;
 
       if (diffData.nextKey && !sameKey) {
@@ -503,8 +551,9 @@ export function patch(parentNode, nextChildren, namespace, overrideMount) {
 
           shouldMove = true;
         } else if (
-          keyMap &&
-          typeof (matchedNode = keyMap.get(diffData.nextKey)) === 'number'
+          parentNode.keyMap &&
+          typeof (matchedNode = parentNode.keyMap.get(diffData.nextKey)) ===
+            'number'
         ) {
           prevNode = resolveMatchedChild(
             parentNode.children[matchedNode],
@@ -514,7 +563,7 @@ export function patch(parentNode, nextChildren, namespace, overrideMount) {
           parentNode.children[matchedNode] = null;
 
           shouldMove = assertShouldMove(
-            index,
+            prevIndex,
             matchedNode,
             parentNode.children
           );
@@ -523,86 +572,97 @@ export function patch(parentNode, nextChildren, namespace, overrideMount) {
         if (prevNode && shouldMove) {
           prevNode.move(
             parentNode.el,
-            findAnchor(parentNode.children, index) || parentNode.anchor || null
+            findAnchor(parentNode.children, prevIndex) ||
+              parentNode.anchor ||
+              null
           );
         }
       }
     }
 
-    if (typeof nextNode === 'string') {
-      parentNode.children[index] = patchText(
-        parentNode,
-        nextNode,
-        prevNode,
-        index
-      );
+    if (nextIndex >= nextChildren.length) {
+      if (prevNode) prevNode.unmount(false, true);
+      prevIndex++;
       continue;
     }
 
-    if (Array.isArray(nextNode)) {
-      parentNode.children[index] = patchFragment(
+    if (typeof nextNode === 'string') {
+      nextChildren[nextIndex] = patchText(
         parentNode,
         nextNode,
         prevNode,
-        index,
+        prevIndex
+      );
+    } else if (Array.isArray(nextNode)) {
+      nextChildren[nextIndex] = patchFragment(
+        parentNode,
+        nextNode,
+        prevNode,
+        nextIndex,
+        prevIndex,
         namespace
       );
-      continue;
     }
-
     // check if this is VNode rather than just object, copy on mount() as well, and check if any changes made to patch() was not made to mount()
-    if (nextNode === null || typeof nextNode !== 'object') {
+    else if (nextNode === null || typeof nextNode !== 'object') {
       if (prevNode) prevNode.unmount(false, true);
-      parentNode.children[index] = null;
-      continue;
-    }
-
-    if (nextNode.constructor === ElementNode) {
-      parentNode.children[index] = patchElement(
+      nextChildren[nextIndex] = null;
+    } else if (nextNode.constructor === ElementNode) {
+      nextChildren[nextIndex] = patchElement(
         parentNode,
         nextNode,
         prevNode,
-        index,
+        nextIndex,
+        prevIndex,
         namespace
       );
     } else if (nextNode.constructor === ComponentNode) {
-      parentNode.children[index] = patchComponent(
+      nextChildren[nextIndex] = patchComponent(
         parentNode,
         nextNode,
         prevNode,
-        index
+        nextIndex,
+        prevIndex
       );
     } else if (nextNode.constructor === TeleportNode) {
       if (nextNode.properties.defer) {
-        const nodeIndex = index;
+        const nodeIndex = nextIndex;
 
         parentNode.children[nodeIndex] =
           prevNode && prevNode.el ? prevNode : null;
 
         renderQueue.queuePost(() => {
-          parentNode.children[nodeIndex] = patchTeleport(
+          nextChildren[nodeIndex] = patchTeleport(
             parentNode,
             nextNode,
             prevNode,
+            nodeIndex,
             nodeIndex
           );
         });
       } else {
-        parentNode.children[index] = patchTeleport(
+        nextChildren[nextIndex] = patchTeleport(
           parentNode,
           nextNode,
           prevNode,
-          index
+          nextIndex,
+          prevIndex
         );
       }
     }
+
+    nextIndex++;
+    prevIndex++;
   }
+
+  parentNode.children = nextChildren;
+  parentNode.keyMap = keyMap;
 
   if (isMount) return;
 
   // index should inheritely be set to nextChildren.length according to the previous loop
   for (
-    index = nextChildren.length;
+    var index = nextChildren.length;
     index < parentNode.children.length;
     index++
   ) {
