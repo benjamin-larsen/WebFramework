@@ -26,6 +26,7 @@ export const EMPTY_ARR = Object.freeze([]);
 export const TRANSITION_CLASS = Symbol('transition_class');
 export const TRANSITION_ENTER_CALLBACK = Symbol('transition_enter_callback');
 export const TRANSITION_LEAVE_CALLBACK = Symbol('transition_leave_callback');
+export const TRANSITION_MOVE_CALLBACK = Symbol('transition_move_callback');
 
 export const NAMESPACES = {
   html: 'http://www.w3.org/1999/xhtml',

@@ -2,7 +2,10 @@ import { ComponentNode } from '../vnode.js';
 import { refreshComponentAnchor } from '../anchor.js';
 import { patch } from './patching.js';
 import { INSTANCE_STATES } from '../constants.js';
-import { getCurrentInstance, setCurrentInstance } from '../reactivity/effect.js';
+import {
+  getCurrentInstance,
+  setCurrentInstance
+} from '../reactivity/effect.js';
 import { shallowReadonly } from '../reactivity/reactive.js';
 import { setNodeTransition } from '../standardComponents/Transition.js';
 
@@ -17,6 +20,8 @@ class RenderQueue {
     this.waiting = new Set();
     this.waitingDir = new Set();
     this.renderId = null;
+
+    this.isRunning = false;
 
     this.currentPromise = null;
     this.postJobs = [];
@@ -35,6 +40,8 @@ class RenderQueue {
   }
 
   process() {
+    this.isRunning = true;
+
     const items = [...this.waiting]
       .filter((inst) => inst.vnode)
       .sort((a, b) => a.level - b.level);
@@ -74,6 +81,8 @@ class RenderQueue {
       promise.resolve();
     }
 
+    this.isRunning = false;
+
     if (this.waiting.size > 0 || this.waitingDir.size > 0) {
       this.renderId = requestAnimationFrame(this.process.bind(this));
     } else {
@@ -82,6 +91,11 @@ class RenderQueue {
   }
 
   queuePost(job) {
+    if (!this.isRunning) {
+      console.warn('queuePost() was called outside of Render Queue.');
+      return;
+    }
+
     const currentInstance = getCurrentInstance();
 
     this.postJobs.push(() => {
@@ -89,7 +103,7 @@ class RenderQueue {
 
       try {
         job();
-      } catch(e) {
+      } catch (e) {
         setCurrentInstance(prevInstance);
         throw e;
       }

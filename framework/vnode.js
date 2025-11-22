@@ -88,9 +88,9 @@ export class ElementNode {
     // if not isRoot it means a parent Element was unmounted.
 
     if (this.transition && isRoot) {
-      this.transition.startOperation(this);
+      let isTransition = this.transition.startOperation(this);
       this.transition.onLeave(this.el, this);
-      this.transition.endOperation();
+      if (isTransition) this.transition.endOperation();
       return;
     }
 

@@ -227,9 +227,14 @@ function patchComponent(parentNode, nextNode, prevNode, index) {
 
 function patchNodeElement(node, el) {
   for (const child of node.children) {
-    if (typeof child !== "object") continue;
+    if (typeof child !== 'object') continue;
     if (!child.el) continue;
-    if (child.constructor !== FragmentNode && child.constructor !== ComponentNode && child.constructor !== TeleportNode) continue;
+    if (
+      child.constructor !== FragmentNode &&
+      child.constructor !== ComponentNode &&
+      child.constructor !== TeleportNode
+    )
+      continue;
 
     child.el = el;
 
