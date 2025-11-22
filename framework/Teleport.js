@@ -10,12 +10,12 @@ export class TeleportNode {
     this.el = null;
   }
 
-  unmount(DOMHandled = false) {
+  unmount() {
     this.anchor = null;
 
     for (const child of this.children) {
       if (!child) continue;
-      child.unmount(DOMHandled, false);
+      child.unmount(false, false);
     }
 
     // Prevent Memory Leak
