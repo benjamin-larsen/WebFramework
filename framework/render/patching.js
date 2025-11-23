@@ -509,7 +509,7 @@ export function patch(parentNode, nextChildren, namespace, overrideMount) {
       diffData &&
       !diffData.isSame &&
       diffData.nextKey &&
-      !parentNode.keyMap.has(diffData.nextKey)
+      (!parentNode.keyMap || !parentNode.keyMap.has(diffData.nextKey))
     ) {
       prevIndex--;
       shouldSkipDiff = true;
@@ -519,7 +519,12 @@ export function patch(parentNode, nextChildren, namespace, overrideMount) {
     if (!shouldSkipDiff && diffData && !diffData.isSame) {
       const sameKey = diffData.prevKey === diffData.nextKey;
 
-      if (diffData.prevKey && !sameKey && keyMap.has(diffData.prevKey)) {
+      if (
+        diffData.prevKey &&
+        !sameKey &&
+        keyMap &&
+        keyMap.has(diffData.prevKey)
+      ) {
         // Detach Previous Node
         detachedNodes.set(diffData.prevKey, prevNode);
       } else if (prevNode) {
