@@ -10,13 +10,7 @@ import {
 import { TeleportNode } from '../Teleport.js';
 import { ComponentInstance } from '../component.js';
 import { shallowCompareObj, mockMap } from '../helpers.js';
-import {
-  INSTANCE_STATES,
-  NAMESPACES,
-  NAMESPACES_TAGS,
-  TRANSITION_CLASS
-} from '../constants.js';
-import { shallowReadonly } from '../reactivity/reactive.js';
+import { NAMESPACES, NAMESPACES_TAGS, TRANSITION_CLASS } from '../constants.js';
 import { getCurrentInstance } from '../reactivity/effect.js';
 import {
   patchElementDirectives,
@@ -172,7 +166,13 @@ function patchText(parentNode, nextText, prevNode, prevIndex) {
   }
 }
 
-function patchComponent(parentNode, nextNode, prevNode, index, prevIndex) {
+function patchComponent(
+  parentNode,
+  nextNode,
+  prevNode,
+  index,
+  prevIndex
+) {
   if (prevNode && prevNode.instance) {
     nextNode.instance = prevNode.instance;
     nextNode.instance.vnode = nextNode;
@@ -212,13 +212,6 @@ function patchComponent(parentNode, nextNode, prevNode, index, prevIndex) {
     nextNode.index = prevIndex;
     nextNode.parent = parentNode;
     nextNode.el = parentNode.el;
-
-    if (nextNode.instance.status !== INSTANCE_STATES.BEFORE_MOUNT) {
-      nextNode.instance.callHook(
-        'beforeUpdate',
-        shallowReadonly(nextNode.properties)
-      );
-    }
 
     // <Transition>
 
@@ -470,7 +463,8 @@ export function patch(parentNode, nextChildren, namespace, overrideMount) {
   const isMount = overrideMount || parentNode.children.length === 0;
 
   // Compute Key Map
-  const keyMap = computeKeys(nextChildren);
+  const nextKeys = computeKeys(nextChildren);
+  const prevKeys = parentNode.keyMap;
 
   /*
     Set unmountList to null, to save memory allocation.
@@ -480,9 +474,7 @@ export function patch(parentNode, nextChildren, namespace, overrideMount) {
     If previous Key Map is zero, this indicates there are no Keyed Children in previous, therefore unmountList is unnesscary.
   */
   const detachedNodes =
-    isMount || !parentNode.keyMap || parentNode.keyMap.size === 0
-      ? mockMap
-      : new Map();
+    isMount || !prevKeys || prevKeys.size === 0 ? mockMap : new Map();
 
   /*if (parentNode.children.length < nextChildren.length) {
     parentNode.children.length = nextChildren.length;
@@ -507,8 +499,8 @@ export function patch(parentNode, nextChildren, namespace, overrideMount) {
     if (
       diffData &&
       !diffData.isSame &&
-      diffData.nextKey &&
-      (!parentNode.keyMap || !parentNode.keyMap.has(diffData.nextKey))
+      diffData.nextKey !== null &&
+      (!prevKeys || !prevKeys.has(diffData.nextKey))
     ) {
       prevIndex--;
       shouldSkipDiff = true;
@@ -517,12 +509,13 @@ export function patch(parentNode, nextChildren, namespace, overrideMount) {
 
     if (!shouldSkipDiff && diffData && !diffData.isSame) {
       const sameKey = diffData.prevKey === diffData.nextKey;
+      const hasPrevKey = diffData.prevKey !== null;
 
       if (
-        diffData.prevKey &&
+        hasPrevKey &&
         !sameKey &&
-        keyMap &&
-        keyMap.has(diffData.prevKey)
+        nextKeys &&
+        nextKeys.has(diffData.prevKey)
       ) {
         // Detach Previous Node
         detachedNodes.set(diffData.prevKey, prevNode);
@@ -540,7 +533,7 @@ export function patch(parentNode, nextChildren, namespace, overrideMount) {
       parentNode.children[prevIndex] = null;
       prevNode = null;
 
-      if (diffData.nextKey && !sameKey) {
+      if (diffData.nextKey !== null && !sameKey) {
         let matchedNode = detachedNodes.get(diffData.nextKey);
         let shouldMove = false;
 
@@ -555,9 +548,8 @@ export function patch(parentNode, nextChildren, namespace, overrideMount) {
 
           shouldMove = true;
         } else if (
-          parentNode.keyMap &&
-          typeof (matchedNode = parentNode.keyMap.get(diffData.nextKey)) ===
-            'number'
+          prevKeys &&
+          typeof (matchedNode = prevKeys.get(diffData.nextKey)) === 'number'
         ) {
           prevNode = resolveMatchedChild(
             parentNode.children[matchedNode],
@@ -631,8 +623,7 @@ export function patch(parentNode, nextChildren, namespace, overrideMount) {
       if (nextNode.properties.defer) {
         const nodeIndex = nextIndex;
 
-        parentNode.children[nodeIndex] =
-          prevNode && prevNode.el ? prevNode : null;
+        nextChildren[nodeIndex] = prevNode && prevNode.el ? prevNode : null;
 
         renderQueue.queuePost(() => {
           nextChildren[nodeIndex] = patchTeleport(
@@ -659,25 +650,5 @@ export function patch(parentNode, nextChildren, namespace, overrideMount) {
   }
 
   parentNode.children = nextChildren;
-  parentNode.keyMap = keyMap;
-
-  if (isMount) return;
-
-  // index should inheritely be set to nextChildren.length according to the previous loop
-  for (
-    var index = nextChildren.length;
-    index < parentNode.children.length;
-    index++
-  ) {
-    const item = parentNode.children[index];
-
-    if (item) item.unmount(false, true);
-  }
-
-  // Clean up Detached Nodes
-  for (const [_, orphan] of detachedNodes) {
-    orphan.unmount(false, true);
-  }
-
-  parentNode.children.length = nextChildren.length;
+  parentNode.keyMap = nextKeys;
 }

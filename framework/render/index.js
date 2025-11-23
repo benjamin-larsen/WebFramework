@@ -4,7 +4,8 @@ import { patch } from './patching.js';
 import { INSTANCE_STATES } from '../constants.js';
 import {
   getCurrentInstance,
-  setCurrentInstance
+  setCurrentInstance,
+  queueJob
 } from '../reactivity/effect.js';
 import { shallowReadonly } from '../reactivity/reactive.js';
 import { setNodeTransition } from '../standardComponents/Transition.js';
@@ -13,6 +14,12 @@ let shouldTrackTime = false;
 
 export function enableRenderTiming() {
   shouldTrackTime = true;
+}
+
+let queueFn = requestAnimationFrame;
+
+export function setInstantRender(value) {
+  queueFn = value ? queueJob : requestAnimationFrame;
 }
 
 class RenderQueue {
@@ -25,11 +32,11 @@ class RenderQueue {
 
     this.currentPromise = null;
     this.postJobs = [];
+
+    this.setPromise();
   }
 
   setPromise() {
-    if (this.currentPromise) return;
-
     let resolve, reject;
     const promise = new Promise((res, rej) => {
       resolve = res;
@@ -50,7 +57,7 @@ class RenderQueue {
     this.waitingDir.clear();
 
     const promise = this.currentPromise;
-    this.currentPromise = null;
+    this.setPromise();
 
     for (const componentInstance of items) {
       if (!componentInstance.vnode) continue;
@@ -84,7 +91,7 @@ class RenderQueue {
     this.isRunning = false;
 
     if (this.waiting.size > 0 || this.waitingDir.size > 0) {
-      this.renderId = requestAnimationFrame(this.process.bind(this));
+      this.renderId = queueFn(this.process.bind(this));
     } else {
       this.renderId = null;
     }
@@ -111,26 +118,22 @@ class RenderQueue {
   }
 
   queueDirective(dir) {
-    this.setPromise();
-
     dir.status = INSTANCE_STATES.UNSYNCED;
 
     this.waitingDir.add(dir);
 
     if (!this.renderId) {
-      this.renderId = requestAnimationFrame(this.process.bind(this));
+      this.renderId = queueFn(this.process.bind(this));
     }
   }
 
   queue(component) {
-    this.setPromise();
-
     component.setStatus(INSTANCE_STATES.UNSYNCED);
 
     this.waiting.add(component);
 
     if (!this.renderId) {
-      this.renderId = requestAnimationFrame(this.process.bind(this));
+      this.renderId = queueFn(this.process.bind(this));
     }
   }
 }
@@ -157,6 +160,12 @@ export function renderNode(node, force) {
       refreshComponentAnchor(node);
     }
 
+    let isMounted = node.instance.status === INSTANCE_STATES.BEFORE_MOUNT;
+    node.instance.callHook(
+      isMounted ? 'beforeMount' : 'beforeUpdate',
+      shallowReadonly(node.properties)
+    );
+
     const nextChildren = node.instance.effect.run();
 
     if (!Array.isArray(nextChildren)) {
@@ -169,7 +178,6 @@ export function renderNode(node, force) {
 
     patch(node, nextChildren, node.el.namespaceURI);
 
-    const isMounted = node.instance.status === INSTANCE_STATES.BEFORE_MOUNT;
     node.instance.setStatus(INSTANCE_STATES.SYNCED);
 
     node.instance.callHook(
