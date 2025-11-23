@@ -73,7 +73,6 @@ function patchElement(
   parentNode,
   nextNode,
   prevNode,
-  index,
   prevIndex,
   parentNamespace
 ) {
@@ -355,7 +354,7 @@ function patchTeleport(parentNode, nextNode, prevNode, index, prevIndex) {
     }
 
     refreshComponentAnchor(nextNode);
-    prevNode.index = index;
+    nextNode.index = index;
     patch(nextNode, nextNode.children, nextNode.el.namespaceURI, true);
 
     return nextNode;
@@ -617,7 +616,6 @@ export function patch(parentNode, nextChildren, namespace, overrideMount) {
         parentNode,
         nextNode,
         prevNode,
-        nextIndex,
         prevIndex,
         namespace
       );
