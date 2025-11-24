@@ -19,7 +19,7 @@ export function findAnchor(oldRender, index) {
     ) {
       const anchor = findAnchor(item.children, -1);
       if (anchor) return anchor;
-    } else {
+    } else if (item.el) {
       return item.el;
     }
   }

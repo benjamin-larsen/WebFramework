@@ -222,7 +222,7 @@ export class Effect {
 
 const microtaskPromise = Promise.resolve();
 
-function queueJob(job) {
+export function queueJob(job) {
   if (typeof window.queueMicrotask === 'function')
     return window.queueMicrotask(job);
 
