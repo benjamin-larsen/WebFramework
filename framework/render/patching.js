@@ -472,31 +472,45 @@ export function patch(parentNode, nextChildren, namespace, overrideMount) {
   const detachedNodes =
     isMount || !prevKeys || prevKeys.size === 0 ? mockMap : new Map();
 
-  /*if (parentNode.children.length < nextChildren.length) {
-    parentNode.children.length = nextChildren.length;
-  }*/
-
   let prevIndex = 0;
   let nextIndex = 0;
 
-  for (;;) {
+  while (
+    prevIndex < parentNode.children.length ||
+    nextIndex < nextChildren.length
+  ) {
     const nextNode = nextChildren[nextIndex];
     let prevNode = isMount ? null : parentNode.children[prevIndex];
-
-    if (
-      prevIndex >= parentNode.children.length &&
-      nextIndex >= nextChildren.length
-    )
-      break;
 
     const diffData = isMount ? null : evalDiff(prevNode, nextNode);
     let shouldSkipDiff = false;
 
+    const sameKey = !!diffData && diffData.prevKey === diffData.nextKey;
+
+    const hasPrevKey = !!diffData && diffData.prevKey !== null;
+    const hasNextKey = !!diffData && diffData.nextKey !== null;
+
+    // Has Previous Node in Next Children?
+    const hasPrevNode =
+      hasPrevKey &&
+      !diffData.isSame &&
+      (sameKey ? true : nextKeys && nextKeys.has(diffData.prevKey));
+
+    // Has Next Node in Previous Children?
+    const hadNextNode =
+      hasNextKey &&
+      !diffData.isSame &&
+      (sameKey ? true : prevKeys && prevKeys.has(diffData.nextKey));
+
     if (
       diffData &&
       !diffData.isSame &&
-      diffData.nextKey !== null &&
-      (!prevKeys || !prevKeys.has(diffData.nextKey))
+      !sameKey &&
+      hasNextKey &&
+      // Check if Next Node is new (insert)
+      !hadNextNode &&
+      // Check that Previous Node still exists (not remove), otherwise would be replace.
+      hasPrevNode
     ) {
       prevIndex--;
       shouldSkipDiff = true;
@@ -504,22 +518,16 @@ export function patch(parentNode, nextChildren, namespace, overrideMount) {
     }
 
     if (!shouldSkipDiff && diffData && !diffData.isSame) {
-      const sameKey = diffData.prevKey === diffData.nextKey;
-      const hasPrevKey = diffData.prevKey !== null;
-
-      if (
-        hasPrevKey &&
-        !sameKey &&
-        nextKeys &&
-        nextKeys.has(diffData.prevKey)
-      ) {
+      if (hasPrevKey && !sameKey && hasPrevNode) {
         // Detach Previous Node
         detachedNodes.set(diffData.prevKey, prevNode);
       } else if (prevNode) {
         prevNode.unmount(false, true);
         parentNode.children[prevIndex] = null;
 
-        if (!sameKey) {
+        // Check that same conditions (Has Previous Key and not Same Key). To confirm that what is diffrent is that Previous Node doesn't exist anymore (remove).
+        // Check if Next Node is not new (not insert), otherwise would be replace.
+        if (hasPrevKey && !sameKey && hadNextNode) {
           prevIndex++;
           continue;
         }
@@ -529,7 +537,7 @@ export function patch(parentNode, nextChildren, namespace, overrideMount) {
       parentNode.children[prevIndex] = null;
       prevNode = null;
 
-      if (diffData.nextKey !== null && !sameKey) {
+      if (hasNextKey && !sameKey) {
         let matchedNode = detachedNodes.get(diffData.nextKey);
         let shouldMove = false;
 
