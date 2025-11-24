@@ -28,21 +28,22 @@ function patchFragment(
   if (prevNode && prevNode.el) {
     prevNode.el = parentNode.el;
     prevNode.parent = parentNode;
-    prevNode.index = prevIndex;
 
+    prevNode.index = prevIndex;
     refreshComponentAnchor(prevNode);
-    prevNode.index = index;
     patch(prevNode, nextArray, namespace);
+    prevNode.index = index;
+
     return prevNode;
   } else {
     const nextNode = new FragmentNode();
     nextNode.el = parentNode.el;
     nextNode.parent = parentNode;
-    nextNode.index = prevIndex;
 
+    nextNode.index = prevIndex;
     refreshComponentAnchor(nextNode);
-    nextNode.index = index;
     patch(nextNode, nextArray, namespace, true);
+    nextNode.index = index;
 
     return nextNode;
   }
@@ -166,13 +167,7 @@ function patchText(parentNode, nextText, prevNode, prevIndex) {
   }
 }
 
-function patchComponent(
-  parentNode,
-  nextNode,
-  prevNode,
-  index,
-  prevIndex
-) {
+function patchComponent(parentNode, nextNode, prevNode, index, prevIndex) {
   if (prevNode && prevNode.instance) {
     nextNode.instance = prevNode.instance;
     nextNode.instance.vnode = nextNode;
@@ -209,7 +204,6 @@ function patchComponent(
       nextNode.keyMap = prevNode.keyMap;
     }
 
-    nextNode.index = prevIndex;
     nextNode.parent = parentNode;
     nextNode.el = parentNode.el;
 
@@ -219,6 +213,8 @@ function patchComponent(
       nextNode.transition && !prevNode
         ? nextNode.transition.startOperation(nextNode)
         : false;
+
+    nextNode.index = prevIndex;
     renderNode(nextNode, true);
     nextNode.index = index;
 
@@ -311,11 +307,11 @@ function patchTeleport(parentNode, nextNode, prevNode, index, prevIndex) {
 
     prevNode.properties = nextNode.properties;
     prevNode.parent = parentNode;
-    prevNode.index = prevIndex;
 
+    prevNode.index = prevIndex;
     refreshComponentAnchor(prevNode);
-    prevNode.index = index;
     patch(prevNode, nextChildren, prevNode.el.namespaceURI);
+    prevNode.index = index;
 
     return prevNode;
   } else {
@@ -323,7 +319,6 @@ function patchTeleport(parentNode, nextNode, prevNode, index, prevIndex) {
     let isDisabled = !!nextNode.properties.disabled;
     nextNode.el = parentNode.el;
     nextNode.parent = parentNode;
-    nextNode.index = prevIndex;
 
     if (!isDisabled) {
       let matchedEl;
@@ -346,9 +341,10 @@ function patchTeleport(parentNode, nextNode, prevNode, index, prevIndex) {
       }
     }
 
+    nextNode.index = prevIndex;
     refreshComponentAnchor(nextNode);
-    nextNode.index = index;
     patch(nextNode, nextNode.children, nextNode.el.namespaceURI, true);
+    nextNode.index = index;
 
     return nextNode;
   }
