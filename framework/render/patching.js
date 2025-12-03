@@ -249,7 +249,7 @@ function patchNodeElement(node, el) {
 
 function patchTeleport(parentNode, nextNode, prevNode, index, prevIndex) {
   if (nextNode.transition) {
-    setNodeTransition(nextChildren, nextNode.transition);
+    setNodeTransition(nextNode.children, nextNode.transition);
   }
 
   if (prevNode && prevNode.el) {
