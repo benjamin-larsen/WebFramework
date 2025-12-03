@@ -16,6 +16,7 @@ import {
   patchElementDirectives,
   finishElementDirectives
 } from './directives.js';
+import { setNodeTransition } from '../standardComponents/Transition.js';
 
 function patchFragment(
   parentNode,
