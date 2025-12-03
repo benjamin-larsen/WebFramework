@@ -247,6 +247,10 @@ function patchNodeElement(node, el) {
 }
 
 function patchTeleport(parentNode, nextNode, prevNode, index, prevIndex) {
+  if (node.transition) {
+    setNodeTransition(nextChildren, nextNode.transition);
+  }
+
   if (prevNode && prevNode.el) {
     const to = nextNode.properties.to;
     let isDisabled = !!nextNode.properties.disabled;
