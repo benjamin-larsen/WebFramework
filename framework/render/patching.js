@@ -10,7 +10,7 @@ import {
 import { TeleportNode } from '../Teleport.js';
 import { ComponentInstance } from '../component.js';
 import { shallowCompareObj, mockMap } from '../helpers.js';
-import { EMPTY_PROPS, NAMESPACES, NAMESPACES_TAGS, TRANSITION_CLASS } from '../constants.js';
+import { NAMESPACES, NAMESPACES_TAGS, TRANSITION_CLASS } from '../constants.js';
 import { getCurrentInstance } from '../reactivity/effect.js';
 import {
   patchElementDirectives,
@@ -184,7 +184,8 @@ function patchComponent(parentNode, nextNode, prevNode, index, prevIndex) {
   if (
     prevNode &&
     prevNode.el &&
-    shallowCompareObj(prevNode.slots || EMPTY_PROPS, nextNode.slots || EMPTY_PROPS) &&
+    !prevNode.slots && // Force render if previous has slots, may have been changed or removed
+    !nextNode.slots && // Force render if next has slots, has been added
     shallowCompareObj(prevNode.properties, nextNode.properties)
   ) {
     nextNode.el = prevNode.el;
