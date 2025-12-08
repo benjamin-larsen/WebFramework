@@ -487,12 +487,15 @@ export function withoutTracking(func) {
 }
 
 export function watch(dep, callback, options = {}) {
-  if (!currentInstance)
+  const { immediate = false, async = false, global = false } = options;
+
+  if (!global && !currentInstance)
     throw Error('Attempted to call watch() outside Instance');
 
-  const instance = currentInstance;
+  if (global && currentInstance)
+    throw Error('Attempted to call global watch() inside Instance');
 
-  const { immediate = false, async = false } = options;
+  const instance = global ? null : currentInstance;
 
   let getter = () => undefined;
 
@@ -566,6 +569,10 @@ export function watch(dep, callback, options = {}) {
     job();
   } else {
     oldValue = effect.run();
+  }
+
+  if (global) return () => {
+    effect.destroy();
   }
 
   instance.watchers.push(effect);
