@@ -32,11 +32,11 @@ class RenderQueue {
 
     this.currentPromise = null;
     this.postJobs = [];
-
-    this.setPromise();
   }
 
   setPromise() {
+    if (this.currentPromise) return;
+
     let resolve, reject;
     const promise = new Promise((res, rej) => {
       resolve = res;
@@ -57,7 +57,7 @@ class RenderQueue {
     this.waitingDir.clear();
 
     const promise = this.currentPromise;
-    this.setPromise();
+    this.currentPromise = null;
 
     for (const componentInstance of items) {
       if (!componentInstance.vnode) continue;
@@ -118,6 +118,8 @@ class RenderQueue {
   }
 
   queueDirective(dir) {
+    this.setPromise();
+
     dir.status = INSTANCE_STATES.UNSYNCED;
 
     this.waitingDir.add(dir);
@@ -128,6 +130,8 @@ class RenderQueue {
   }
 
   queue(component) {
+    this.setPromise();
+
     component.setStatus(INSTANCE_STATES.UNSYNCED);
 
     this.waiting.add(component);
@@ -140,10 +144,28 @@ class RenderQueue {
 
 export const renderQueue = new RenderQueue();
 
-const furfilledPromise = Promise.resolve();
+let currentTickSeeker = null;
 
 export function nextTick() {
-  if (!renderQueue.currentPromise) return furfilledPromise;
+  if (!renderQueue.currentPromise) {
+    if (currentTickSeeker) return currentTickSeeker;
+
+    currentTickSeeker = new Promise((resolve) => {
+      queueJob(() => {
+        if (renderQueue.currentPromise.promise) {
+          renderQueue.currentPromise.promise.then(() => {
+            currentTickSeeker = null;
+            resolve();
+          });
+          return;
+        };
+
+        resolve();
+      })
+    })
+
+    return currentTickSeeker;
+  }
 
   return renderQueue.currentPromise.promise;
 }
