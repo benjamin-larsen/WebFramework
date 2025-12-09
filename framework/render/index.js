@@ -152,7 +152,7 @@ export function nextTick() {
 
     currentTickSeeker = new Promise((resolve) => {
       queueJob(() => {
-        if (renderQueue.currentPromise.promise) {
+        if (renderQueue.currentPromise) {
           renderQueue.currentPromise.promise.then(() => {
             currentTickSeeker = null;
             resolve();
