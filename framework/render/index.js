@@ -160,6 +160,8 @@ export function nextTick() {
           return;
         };
 
+        currentTickSeeker = null;
+
         resolve();
       })
     })
