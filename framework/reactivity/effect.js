@@ -452,6 +452,13 @@ export function trigger(target, triggerType, key, newValue, oldValue) {
     }
 
     switch (triggerType) {
+      case TRIGGER_TYPES.DELETE: {
+        if (isCollection) {
+          sub(propsMap.get('size'));
+        }
+        break;
+      }
+
       case TRIGGER_TYPES.ADD: {
         if (isArray && isIntegerKey(key)) {
           sub(propsMap.get('length'));
