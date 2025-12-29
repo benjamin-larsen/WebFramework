@@ -578,9 +578,10 @@ export function watch(dep, callback, options = {}) {
     oldValue = effect.run();
   }
 
-  if (global) return () => {
-    effect.destroy();
-  }
+  if (global)
+    return () => {
+      effect.destroy();
+    };
 
   instance.watchers.push(effect);
 

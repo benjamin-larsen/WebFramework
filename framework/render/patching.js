@@ -348,10 +348,9 @@ function patchTeleport(parentNode, nextNode, prevNode, index, prevIndex) {
 
     // <Transition>
 
-    let isTransition =
-      nextNode.transition
-        ? nextNode.transition.startOperation(nextNode)
-        : false;
+    let isTransition = nextNode.transition
+      ? nextNode.transition.startOperation(nextNode)
+      : false;
 
     nextNode.index = prevIndex;
     refreshComponentAnchor(nextNode);

@@ -1,1 +1,1 @@
-export default new Set([ "Lazy", "Transition", "TransitionGroup" ]);
+export default new Set(['Lazy', 'Transition', 'TransitionGroup']);

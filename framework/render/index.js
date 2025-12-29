@@ -158,13 +158,13 @@ export function nextTick() {
             resolve();
           });
           return;
-        };
+        }
 
         currentTickSeeker = null;
 
         resolve();
-      })
-    })
+      });
+    });
 
     return currentTickSeeker;
   }
