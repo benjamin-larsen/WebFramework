@@ -119,7 +119,7 @@ function createInvoker(func, node) {
 }
 
 function patchEvent(prevNode, nextNode, propName, listenerFn) {
-  const eventName = propName[2].toLowerCase() + propName.substring(3);
+  const eventName = propName.substring(2).toLowerCase();
   const hasPrevInvoker =
     prevNode && prevNode.eventInvokers && prevNode.eventInvokers[eventName];
 
