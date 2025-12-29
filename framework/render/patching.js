@@ -346,10 +346,23 @@ function patchTeleport(parentNode, nextNode, prevNode, index, prevIndex) {
       }
     }
 
+    // <Transition>
+
+    let isTransition =
+      nextNode.transition
+        ? nextNode.transition.startOperation(nextNode)
+        : false;
+
     nextNode.index = prevIndex;
     refreshComponentAnchor(nextNode);
     patch(nextNode, nextNode.children, nextNode.el.namespaceURI, true);
     nextNode.index = index;
+
+    if (isTransition) {
+      nextNode.transition.endOperation();
+    }
+
+    // </Transition>
 
     return nextNode;
   }

@@ -11,11 +11,18 @@ export class TeleportNode {
   }
 
   unmount(_, isRoot) {
+    let isTransition =
+      this.transition && isRoot ? this.transition.startOperation(this) : false;
+
     this.anchor = null;
 
     for (const child of this.children) {
       if (!child) continue;
       child.unmount(false, this.transition && isRoot);
+    }
+
+    if (isTransition) {
+      this.transition.endOperation();
     }
 
     // Prevent Memory Leak
